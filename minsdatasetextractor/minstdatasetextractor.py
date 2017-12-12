@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # imports
 from enum import Enum, unique
+from os import stat
 # contantes
 FILE_MODE="rb"
 ENDIAN="big"
@@ -18,6 +19,13 @@ class HeaderSize(Enum):
     IMAGE=4
     pass
 pass
+# header size
+@unique
+class MagicNumber(Enum):
+    LABEL=2049
+    IMAGE=2051
+    pass
+pass
 # pattern types
 @unique
 class Pattern(Enum):
@@ -27,12 +35,15 @@ class Pattern(Enum):
 pass
 # MINST data set extractor
 class MinstDataSetExtractor():
-    #extract data set
+    # extract data set
     def extractDataSet(self):
         labels=self.extractLabels()
         pass
-    #extract labels
+    # extract labels
     def extractLabels(self):
+        # get file size
+        fileSize=stat(self.labelsFileName).st_size
+        # read file
         with open(self.labelsFileName, FILE_MODE) as labelsFile:
             # read header
             for index in range(0,HeaderSize.LABEL.value):
@@ -40,7 +51,8 @@ class MinstDataSetExtractor():
                 if index==0 :
                     magicNumber=int.from_bytes(bytes, byteorder=ENDIAN)
                 else:
-                    labelNumber = int.from_bytes(bytes, byteorder=ENDIAN)
+                    labelsNumber = int.from_bytes(bytes, byteorder=ENDIAN)
+                    self.checkLabelsFile(fileSize, magicNumber, labelsNumber)
             # read body
             byte = None
             while byte != b"":
@@ -49,7 +61,16 @@ class MinstDataSetExtractor():
                 pass
             pass
         pass
-    #constructor
+    # check labels file
+    def checkLabelsFile(self,fileSize,magicNumber,labelsNumber):
+        # check magic number
+        if MagicNumber.LABEL.value != magicNumber:
+            raise Exception('Labels magic number does not match : expected=' + str(MagicNumber.LABEL.value) + " actual="+str(magicNumber))
+        # check size
+        expectedSize=labelsNumber+(HeaderSize.LABEL.value*DataTypeSize.INTEGER_SIZE.value)
+        if expectedSize != fileSize:
+            raise Exception('Labels file size does not match : expected=' + str(expectedSize) + " actual="+str(fileSize))
+    # constructor
     def __init__(self, labelsFileName, imagesFileName,patternValue):
         self.labelsFileName=labelsFileName
         self.imagesFileName=imagesFileName

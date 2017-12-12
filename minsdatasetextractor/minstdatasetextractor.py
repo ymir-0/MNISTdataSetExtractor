@@ -5,6 +5,7 @@ from os import stat
 # contantes
 FILE_MODE="rb"
 ENDIAN="big"
+END_OF_FILE=b""
 # data type size
 @unique
 class DataTypeSize(Enum):
@@ -55,7 +56,7 @@ class MinstDataSetExtractor():
                     self.checkLabelsFile(fileSize, magicNumber, labelsNumber)
             # read body
             byte = None
-            while byte != b"":
+            while byte != END_OF_FILE:
                 # Do stuff with byte.
                 byte = labelsFile.read(DataTypeSize.BYTE_SIZE.value)
                 pass

@@ -48,20 +48,24 @@ class MinstDataSetExtractor():
         with open(self.labelsFileName, FILE_MODE) as labelsFile:
             # read header
             for index in range(0,HeaderSize.LABEL.value):
-                bytes = labelsFile.read(DataTypeSize.INTEGER_SIZE.value)
+                binaryValue = labelsFile.read(DataTypeSize.INTEGER_SIZE.value)
+                numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
                 if index==0 :
-                    magicNumber=int.from_bytes(bytes, byteorder=ENDIAN)
+                    magicNumber=numericValue
                 else:
-                    labelsNumber = int.from_bytes(bytes, byteorder=ENDIAN)
+                    labelsNumber = numericValue
                     self.checkLabelsFile(fileSize, magicNumber, labelsNumber)
             # read body
-            byte = None
-            while byte != END_OF_FILE:
+            labels=dict()
+            index=0
+            while binaryValue != END_OF_FILE:
                 # Do stuff with byte.
-                byte = labelsFile.read(DataTypeSize.BYTE_SIZE.value)
-                pass
-            pass
-        pass
+                binaryValue = labelsFile.read(DataTypeSize.BYTE_SIZE.value)
+                numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
+                labels[index]=str(numericValue)
+                index=index+1
+            labelsFile.close()
+        return labels
     # check labels file
     def checkLabelsFile(self,fileSize,magicNumber,labelsNumber):
         # check magic number

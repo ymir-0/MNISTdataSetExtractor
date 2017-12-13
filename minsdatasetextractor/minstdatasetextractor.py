@@ -5,7 +5,6 @@ from os import stat
 # contantes
 FILE_MODE="rb"
 ENDIAN="big"
-END_OF_FILE=b""
 # data type size
 @unique
 class DataTypeSize(Enum):
@@ -56,7 +55,7 @@ class MinstDataSetExtractor():
             # read body
             labels=dict()
             index=0
-            while binaryValue != END_OF_FILE:
+            while index<labelsNumber:
                 binaryValue = labelsFile.read(DataTypeSize.BYTE_SIZE.value)
                 numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
                 labels[index]=str(numericValue)
@@ -97,7 +96,7 @@ class MinstDataSetExtractor():
             pixels=list()
             imageIndex=0
             pixelIndex=0
-            while binaryValue != END_OF_FILE:
+            while imageIndex<imagesNumber:
                 # read image
                 if pixelIndex<pixelNumbers:
                     binaryValue = imagesFile.read(DataTypeSize.BYTE_SIZE.value)

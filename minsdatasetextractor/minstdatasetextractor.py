@@ -31,7 +31,7 @@ class MinstDataSetExtractor():
     def extractDataSet(self):
         # extract separated data
         labels=self.extractLabels()
-        images = self.extractImages()
+        width, height, images = self.extractImages()
         # check size consistancy labels / images
         if len(labels)!=len(images):
             raise Exception('Size between labels & images does not match : labels=' + str(len(labels)) + " images=" + str(len(images)))
@@ -86,10 +86,10 @@ class MinstDataSetExtractor():
                 elif index == 1:
                     imagesNumber = numericValue
                 elif index == 2:
-                    rowsNumber = numericValue
+                    width = numericValue
                 else:
-                    columnsNumber = numericValue
-                    pixelNumbers = rowsNumber * columnsNumber
+                    height = numericValue
+                    pixelNumbers = width * height
                     self.checkImagesFile(fileSize, magicNumber, imagesNumber,pixelNumbers)
             # read body
             images=dict()
@@ -110,7 +110,7 @@ class MinstDataSetExtractor():
                     pixels = list()
                     pixelIndex = 0
             imagesFile.close()
-        return images
+        return width , height, images
     # check images file
     def checkImagesFile(self,fileSize,magicNumber,imagesNumber,pixelNumbers):
         # check magic number

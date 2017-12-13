@@ -11,34 +11,27 @@ END_OF_FILE=b""
 class DataTypeSize(Enum):
     INTEGER_SIZE=4
     BYTE_SIZE=1
-    pass
-pass
 # header size
 @unique
 class HeaderSize(Enum):
     LABEL=2
     IMAGE=4
-    pass
-pass
 # header size
 @unique
 class MagicNumber(Enum):
     LABEL=2049
     IMAGE=2051
-    pass
-pass
 # pattern types
 @unique
 class Pattern(Enum):
     TRAINING="training"
     TEST="test"
-    pass
-pass
 # MINST data set extractor
 class MinstDataSetExtractor():
     # extract data set
     def extractDataSet(self):
         labels=self.extractLabels()
+        images = self.extractImages()
         pass
     # extract labels
     def extractLabels(self):
@@ -75,17 +68,54 @@ class MinstDataSetExtractor():
         expectedSize=labelsNumber+(HeaderSize.LABEL.value*DataTypeSize.INTEGER_SIZE.value)
         if expectedSize != fileSize:
             raise Exception('Labels file size does not match : expected=' + str(expectedSize) + " actual="+str(fileSize))
+    # extract images
+    def extractImages(self):
+        # get file size
+        fileSize=stat(self.imagesFileName).st_size
+        # read file
+        with open(self.imagesFileName, FILE_MODE) as imagesFile:
+            # read header
+            for index in range(0,HeaderSize.IMAGE.value):
+                binaryValue = imagesFile.read(DataTypeSize.INTEGER_SIZE.value)
+                numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
+                if index==0 :
+                    magicNumber=numericValue
+                elif index == 1:
+                    imagesNumber = numericValue
+                elif index == 2:
+                    rowsNumber = numericValue
+                else:
+                    columnsNumber = numericValue
+                    self.checkImagesFile(fileSize, magicNumber, imagesNumber,rowsNumber,columnsNumber)
+            # read body
+            images=dict()
+            index=0
+            while binaryValue != END_OF_FILE:
+                # Do stuff with byte.
+                binaryValue = imagesFile.read(DataTypeSize.BYTE_SIZE.value)
+                numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
+                images[index]=str(numericValue)
+                index=index+1
+            imagesFile.close()
+        return images
+    # check images file
+    def checkImagesFile(self,fileSize,magicNumber,imagesNumber,rowsNumber,columnsNumber):
+        # check magic number
+        if MagicNumber.IMAGE.value != magicNumber:
+            raise Exception('Images magic number does not match : expected=' + str(MagicNumber.IMAGE.value) + " actual="+str(magicNumber))
+        # check size
+        expectedSize=(imagesNumber*rowsNumber*columnsNumber)+(HeaderSize.IMAGE.value*DataTypeSize.INTEGER_SIZE.value)
+        if expectedSize != fileSize:
+            raise Exception('Images file size does not match : expected=' + str(expectedSize) + " actual="+str(fileSize))
     # constructor
     def __init__(self, labelsFileName, imagesFileName,patternValue):
         self.labelsFileName=labelsFileName
         self.imagesFileName=imagesFileName
         self.patternValue=patternValue
-        pass
-    pass
 # run extractor
 if __name__ == '__main__':
     labelsFileName="/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/t10k-labels.idx1-ubyte"
-    imagesFileName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/t10k-images-idx3-ubyte"
+    imagesFileName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/t10k-images.idx3-ubyte"
     patternValue=Pattern.TEST.value
     mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,patternValue)
     mdse.extractDataSet()

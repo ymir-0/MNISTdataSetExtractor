@@ -33,6 +33,10 @@ class MinstDataSetExtractor():
         # extract separated data
         labels=self.extractLabels()
         images = self.extractImages()
+        # check size consistancy labels / images
+        if len(labels)!=len(images):
+            raise Exception('Size between labels & images does not match : labels=' + str(len(labels)) + " images=" + str(len(images)))
+        #
         pass
     # extract labels
     def extractLabels(self):

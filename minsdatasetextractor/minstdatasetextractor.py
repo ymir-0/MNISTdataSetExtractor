@@ -23,8 +23,13 @@ class MagicNumber(Enum):
 # pattern types
 @unique
 class Pattern(Enum):
-    TRAINING="training"
-    TEST="test"
+    TRAINING="TRAINING"
+    TEST="TEST"
+    @staticmethod
+    def listValues():
+        values=list()
+        for pattern in Pattern: values.append(pattern.value.upper())
+        return values
 # MINST data set extractor
 class MinstDataSetExtractor():
     # extract data set
@@ -122,6 +127,11 @@ class MinstDataSetExtractor():
             raise Exception('Images file size does not match : expected=' + str(expectedSize) + " actual="+str(fileSize))
     # constructor
     def __init__(self, labelsFileName, imagesFileName,patternValue):
+        # check patternValue
+        patternValues=Pattern.listValues()
+        if patternValue.upper() not in patternValues:
+            raise Exception('Pattern does not match : expected=' + str(patternValues) + " actual=" + str(patternValue))
+        # construct object
         self.labelsFileName=labelsFileName
         self.imagesFileName=imagesFileName
         self.patternValue=patternValue

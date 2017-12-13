@@ -30,6 +30,7 @@ class Pattern(Enum):
 class MinstDataSetExtractor():
     # extract data set
     def extractDataSet(self):
+        # extract separated data
         labels=self.extractLabels()
         images = self.extractImages()
         pass
@@ -52,7 +53,6 @@ class MinstDataSetExtractor():
             labels=dict()
             index=0
             while binaryValue != END_OF_FILE:
-                # Do stuff with byte.
                 binaryValue = labelsFile.read(DataTypeSize.BYTE_SIZE.value)
                 numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
                 labels[index]=str(numericValue)
@@ -86,25 +86,35 @@ class MinstDataSetExtractor():
                     rowsNumber = numericValue
                 else:
                     columnsNumber = numericValue
-                    self.checkImagesFile(fileSize, magicNumber, imagesNumber,rowsNumber,columnsNumber)
+                    pixelNumbers = rowsNumber * columnsNumber
+                    self.checkImagesFile(fileSize, magicNumber, imagesNumber,pixelNumbers)
             # read body
             images=dict()
-            index=0
+            pixels=list()
+            imageIndex=0
+            pixelIndex=0
             while binaryValue != END_OF_FILE:
-                # Do stuff with byte.
-                binaryValue = imagesFile.read(DataTypeSize.BYTE_SIZE.value)
-                numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
-                images[index]=str(numericValue)
-                index=index+1
+                # read image
+                if pixelIndex<pixelNumbers:
+                    binaryValue = imagesFile.read(DataTypeSize.BYTE_SIZE.value)
+                    numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
+                    pixels.append(numericValue)
+                    pixelIndex=pixelIndex+1
+                # add image to dictionary
+                else:
+                    images[imageIndex]=pixels
+                    imageIndex=imageIndex+1
+                    pixels = list()
+                    pixelIndex = 0
             imagesFile.close()
         return images
     # check images file
-    def checkImagesFile(self,fileSize,magicNumber,imagesNumber,rowsNumber,columnsNumber):
+    def checkImagesFile(self,fileSize,magicNumber,imagesNumber,pixelNumbers):
         # check magic number
         if MagicNumber.IMAGE.value != magicNumber:
             raise Exception('Images magic number does not match : expected=' + str(MagicNumber.IMAGE.value) + " actual="+str(magicNumber))
         # check size
-        expectedSize=(imagesNumber*rowsNumber*columnsNumber)+(HeaderSize.IMAGE.value*DataTypeSize.INTEGER_SIZE.value)
+        expectedSize=(imagesNumber*pixelNumbers)+(HeaderSize.IMAGE.value*DataTypeSize.INTEGER_SIZE.value)
         if expectedSize != fileSize:
             raise Exception('Images file size does not match : expected=' + str(expectedSize) + " actual="+str(fileSize))
     # constructor

@@ -30,17 +30,27 @@ class Pattern(Enum):
         values=list()
         for pattern in Pattern: values.append(pattern.value.upper())
         return values
+# test datum
+class TestData():
+    # constructor
+    def __init__(self, width, height, images, labels,pattern):
+        self.width = width
+        self.height = height
+        self.images = images
+        self.labels = labels
+        self.pattern = pattern
 # MINST data set extractor
 class MinstDataSetExtractor():
     # extract data set
     def extractDataSet(self):
         # extract separated data
         labels=self.extractLabels()
-        width, height, images = self.extractImages()
+        self.width, self.height, images = self.extractImages()
         # check size consistancy labels / images
         if len(labels)!=len(images):
             raise Exception('Size between labels & images does not match : labels=' + str(len(labels)) + " images=" + str(len(images)))
-        #
+        # write data
+        self.writeData(images ,labels)
         pass
     # extract labels
     def extractLabels(self):
@@ -125,8 +135,14 @@ class MinstDataSetExtractor():
         expectedSize=(imagesNumber*pixelNumbers)+(HeaderSize.IMAGE.value*DataTypeSize.INTEGER_SIZE.value)
         if expectedSize != fileSize:
             raise Exception('Images file size does not match : expected=' + str(expectedSize) + " actual="+str(fileSize))
+    # write data
+    def writeData(self, images, labels):
+        for index in range(0, len(images)):
+            testData=TestData(self.width, self.height, images, labels,self.patternValue)
+            pass
+        pass
     # constructor
-    def __init__(self, labelsFileName, imagesFileName,patternValue):
+    def __init__(self, labelsFileName, imagesFileName, outputDirectoryName,patternValue):
         # check patternValue
         patternValues=Pattern.listValues()
         if patternValue.upper() not in patternValues:
@@ -135,12 +151,14 @@ class MinstDataSetExtractor():
         self.labelsFileName=labelsFileName
         self.imagesFileName=imagesFileName
         self.patternValue=patternValue
+        self.outputDirectoryName=outputDirectoryName
 # run extractor
 if __name__ == '__main__':
-    labelsFileName="/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/t10k-labels.idx1-ubyte"
-    imagesFileName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/t10k-images.idx3-ubyte"
+    labelsFileName="/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-labels.idx1-ubyte"
+    imagesFileName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-images.idx3-ubyte"
     patternValue=Pattern.TEST.value
-    mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,patternValue)
+    outputDirectoryName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/"+patternValue
+    mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,outputDirectoryName,patternValue)
     mdse.extractDataSet()
     pass
 pass

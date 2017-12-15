@@ -138,7 +138,7 @@ class MinstDataSetExtractor():
     # write data
     def writeData(self, images, labels):
         for index in range(0, len(images)):
-            testData=TestData(self.width, self.height, images, labels,self.patternValue)
+            testData=TestData(self.width, self.height, images[index], labels[index],self.patternValue)
             pass
         pass
     # constructor

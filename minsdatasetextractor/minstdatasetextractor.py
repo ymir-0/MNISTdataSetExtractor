@@ -7,6 +7,7 @@ from os.path import join
 from pythoncommontools.logger import logger
 from pythoncommontools.objectUtil.objectUtil import methodArgsStringRepresentation
 from pythoncommontools.configurationLoader import configurationLoader
+from pythoncommontools.jsonEncoderDecoder.complexJsonEncoderDecoder import ComplexJsonEncoder
 # contantes
 CONFIGURATION_FILE=join("..","conf","minsdatasetextractor.conf")
 FILE_MODE="rb"
@@ -198,8 +199,10 @@ class MinstDataSetExtractor():
         argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.writeData).parameters,locals())
         # logger input
         logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.writeData.__name__,message=argsStr)
+        # encode & write each data
         for index in range(0, len(images)):
-            testData=TestData(self.width, self.height, images[index], labels[index],self.patternValue)
+            objectTestData=TestData(self.width, self.height, images[index], labels[index],self.patternValue)
+            encodedTestData=ComplexJsonEncoder.dumpComplexObject(objectTestData)
             pass
         # logger output
         logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.writeData.__name__)

@@ -129,7 +129,8 @@ class MinstDataSetExtractor():
                     errorMessage = "Size between labels & images does not match : labels=" + str(labelsNumber) + " images=" + str(imagesNumber)
                     logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__,MinstDataSetExtractor.extractDataSet.__name__, errorMessage)
                     raise Exception(errorMessage)
-                pass
+                # write test data
+                self.writeData(labelsNumber, labelsFile, imagesFile, width, height)
             imagesFile.close()
         labelsFile.close()
         # logger output
@@ -204,6 +205,40 @@ class MinstDataSetExtractor():
         logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.parseImagesFileHeader.__name__,(imagesNumber, width , height))
         # return
         return imagesNumber, width , height
+    # write data
+    def writeData(self, dataNumber, labelsFile, imagesFile, width, height):
+        # logger context
+        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.writeData).parameters,locals())
+        # logger input
+        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.writeData.__name__,message=argsStr)
+        # read all data
+        pixelNumbers=width*height
+        index = 0
+        while index < dataNumber:
+            # read label
+            binaryValue = labelsFile.read(DataTypeSize.BYTE_SIZE.value)
+            numericValue = int.from_bytes(binaryValue, byteorder=ENDIAN)
+            label = str(numericValue)
+            # read image
+            pixelIndex = 0
+            image = list()
+            while pixelIndex < pixelNumbers:
+                binaryValue = imagesFile.read(DataTypeSize.BYTE_SIZE.value)
+                numericValue = int.from_bytes(binaryValue, byteorder=ENDIAN)
+                image.append(numericValue)
+                pixelIndex = pixelIndex + 1
+            # set & encode test data
+            objectTestData=TestData(width, height,image,label,self.patternValue)
+            dictTestData=dumps(objectTestData.__dict__)
+            # write test data into file
+            testFileName=join(self.outputDirectoryName,str(index)+TEST_FILE_EXTENSION)
+            testFile = open(testFileName, FileMode.TEST_WRITE.value)
+            testFile.write(dictTestData)
+            testFile.close()
+            # next data
+            index = index + 1
+        # logger output
+        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.writeData.__name__)
     # constructor
     def __init__(self, labelsFileName, imagesFileName, outputDirectoryName,patternValue):
         # logger context
@@ -234,17 +269,17 @@ class MinstDataSetExtractor():
 # run extractor
 if __name__ == '__main__':
     # EXTRACT DATA SET
-    labelsFileName="/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-labels.idx1-ubyte"
-    imagesFileName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-images.idx3-ubyte"
-    patternValue=Pattern.TEST.value
-    outputDirectoryName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/"+patternValue
-    mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,outputDirectoryName,patternValue)
-    mdse.extractDataSet()
+    #labelsFileName="/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-labels.idx1-ubyte"
+    #imagesFileName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-images.idx3-ubyte"
+    #patternValue=Pattern.TEST.value
+    #outputDirectoryName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/"+patternValue
+    #mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,outputDirectoryName,patternValue)
+    #mdse.extractDataSet()
     # CHECK EXTRACTED DATA
-    #testData=TestData()
-    #for i in range(0,10):
-    #    testData.load("/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/TEST/"+str(i)+TEST_FILE_EXTENSION)
-    #    print(str(testData))
+    testData=TestData()
+    for i in range(0,10):
+        testData.load("/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/TEST/"+str(i)+TEST_FILE_EXTENSION)
+        print(str(testData))
     #    pass
     pass
 pass

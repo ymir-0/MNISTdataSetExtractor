@@ -1,6 +1,6 @@
 * PURPOSE
-This program extract MINST data file to JSON files.
-MINST is a format used to train a network neuron nest.
+This program extract MNIST data file to JSON files.
+MNIST is a format used to train a network neuron nest.
 Here are the data for number recognition : http://yann.lecun.com/exdb/mnist/
 For more general information : https://www.nist.gov/itl/iad/image-group/emnist-dataset
 * EXAMPLES

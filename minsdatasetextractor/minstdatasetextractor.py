@@ -174,6 +174,7 @@ class MinstDataSetExtractor():
         logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.parseLabelsFileHeader.__name__,labelsNumber)
         # return
         return labelsNumber
+    # parse images file header
     def parseImagesFileHeader(self,imagesFile):
         # logger context
         argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.parseImagesFileHeader).parameters,locals())

@@ -5,7 +5,6 @@ from enum import Enum, unique
 from os import stat
 from os.path import join
 from pythoncommontools.logger import logger
-from pythoncommontools.logger.logger import loadLogger
 from pythoncommontools.objectUtil.objectUtil import methodArgsStringRepresentation
 from pythoncommontools.configurationLoader import configurationLoader
 # contantes
@@ -14,7 +13,7 @@ FILE_MODE="rb"
 ENDIAN="big"
 # load configuration
 configurationLoader.loadConfiguration( CONFIGURATION_FILE )
-loadLogger("MinstDataSetExtractor",CONFIGURATION_FILE)
+logger.loadLogger("MinstDataSetExtractor",CONFIGURATION_FILE)
 # data type size
 @unique
 class DataTypeSize(Enum):
@@ -44,15 +43,26 @@ class Pattern(Enum):
 class TestData():
     # constructor
     def __init__(self, width, height, images, labels,pattern):
+        # logger context
+        argsStr = methodArgsStringRepresentation(signature(TestData.__init__).parameters,locals())
+        # logger input
+        logger.loadedLogger.input(__name__, TestData.__name__, TestData.__init__.__name__,message=argsStr)
+        # construct object
         self.width = width
         self.height = height
         self.images = images
         self.labels = labels
         self.pattern = pattern
+        # logger output
+        logger.loadedLogger.output(__name__, TestData.__name__, TestData.__init__.__name__)
 # MINST data set extractor
 class MinstDataSetExtractor():
     # extract data set
     def extractDataSet(self):
+        # logger context
+        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.extractDataSet).parameters,locals())
+        # logger input
+        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractDataSet.__name__,message=argsStr)
         # extract separated data
         labels=self.extractLabels()
         self.width, self.height, images = self.extractImages()
@@ -61,9 +71,14 @@ class MinstDataSetExtractor():
             raise Exception('Size between labels & images does not match : labels=' + str(len(labels)) + " images=" + str(len(images)))
         # write data
         self.writeData(images ,labels)
-        pass
+        # logger output
+        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractDataSet.__name__)
     # extract labels
     def extractLabels(self):
+        # logger context
+        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.extractLabels).parameters,locals())
+        # logger input
+        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractLabels.__name__,message=argsStr)
         # get file size
         fileSize=stat(self.labelsFileName).st_size
         # read file
@@ -86,9 +101,16 @@ class MinstDataSetExtractor():
                 labels[index]=str(numericValue)
                 index=index+1
             labelsFile.close()
+        # logger output
+        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractLabels.__name__,labels)
+        # return
         return labels
     # check labels file
     def checkLabelsFile(self,fileSize,magicNumber,labelsNumber):
+        # logger context
+        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.checkLabelsFile).parameters,locals())
+        # logger input
+        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkLabelsFile.__name__,message=argsStr)
         # check magic number
         if MagicNumber.LABEL.value != magicNumber:
             raise Exception('Labels magic number does not match : expected=' + str(MagicNumber.LABEL.value) + " actual="+str(magicNumber))
@@ -96,8 +118,14 @@ class MinstDataSetExtractor():
         expectedSize=labelsNumber+(HeaderSize.LABEL.value*DataTypeSize.INTEGER_SIZE.value)
         if expectedSize != fileSize:
             raise Exception('Labels file size does not match : expected=' + str(expectedSize) + " actual="+str(fileSize))
+        # logger output
+        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkLabelsFile.__name__)
     # extract images
     def extractImages(self):
+        # logger context
+        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.extractImages).parameters,locals())
+        # logger input
+        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractImages.__name__,message=argsStr)
         # get file size
         fileSize=stat(self.imagesFileName).st_size
         # read file
@@ -135,9 +163,16 @@ class MinstDataSetExtractor():
                     pixels = list()
                     pixelIndex = 0
             imagesFile.close()
+        # logger output
+        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractImages.__name__,(width , height, images))
+        # return
         return width , height, images
     # check images file
     def checkImagesFile(self,fileSize,magicNumber,imagesNumber,pixelNumbers):
+        # logger context
+        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.checkImagesFile).parameters,locals())
+        # logger input
+        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkImagesFile.__name__,message=argsStr)
         # check magic number
         if MagicNumber.IMAGE.value != magicNumber:
             raise Exception('Images magic number does not match : expected=' + str(MagicNumber.IMAGE.value) + " actual="+str(magicNumber))
@@ -145,12 +180,19 @@ class MinstDataSetExtractor():
         expectedSize=(imagesNumber*pixelNumbers)+(HeaderSize.IMAGE.value*DataTypeSize.INTEGER_SIZE.value)
         if expectedSize != fileSize:
             raise Exception('Images file size does not match : expected=' + str(expectedSize) + " actual="+str(fileSize))
+        # logger output
+        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkImagesFile.__name__)
     # write data
     def writeData(self, images, labels):
+        # logger context
+        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.writeData).parameters,locals())
+        # logger input
+        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.writeData.__name__,message=argsStr)
         for index in range(0, len(images)):
             testData=TestData(self.width, self.height, images[index], labels[index],self.patternValue)
             pass
-        pass
+        # logger output
+        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.writeData.__name__)
     # constructor
     def __init__(self, labelsFileName, imagesFileName, outputDirectoryName,patternValue):
         # logger context

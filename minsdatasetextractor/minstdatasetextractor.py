@@ -45,7 +45,7 @@ class Pattern(Enum):
 # test datum
 class TestData():
     # constructor
-    def __init__(self, width=0, height=0, images=None, labels=None,pattern=None):
+    def __init__(self, width=0, height=0, images=[], labels="",pattern=""):
         # logger context
         argsStr = methodArgsStringRepresentation(signature(TestData.__init__).parameters,locals())
         # logger input
@@ -78,19 +78,27 @@ class TestData():
             # string standard data
             representation=str({"labels":self.labels,"pattern":self.pattern,"width":self.width,"height":self.height})+linesep
             # string image
+            rawIndex=0
             columnIndex=0
-            for pixelIndex in range(0,self.width*self.height):
+            pixelsNumber=self.width*self.height
+            print("DEBUG : calculated pixelsNumber="+str(pixelsNumber))
+            print("DEBUG : stored pixelsNumber="+str(len(self.images)))
+            for pixelIndex in range(0,pixelsNumber):
+                print("DEBUG : pixelIndex=" + str(pixelIndex))
+                print("DEBUG : rawIndex=" + str(rawIndex))
+                print("DEBUG : columnIndex=" + str(columnIndex))
                 # add pixel related gradient
                 pixelValue=self.images[pixelIndex]
                 gradientIndex=int(pixelValue/REPRENSATION_INTERVAL)
                 gradient=REPRENSATION_GRADIENT[gradientIndex]
                 representation=representation+gradient
                 # check if new new line
-                if columnIndex<self.width:
+                if columnIndex<self.width-1:
                     columnIndex=columnIndex+1
                 else:
                     representation=representation+linesep
                     columnIndex=0
+                    rawIndex=rawIndex+1
             pass
         return representation
     def __str__(self):
@@ -193,22 +201,25 @@ class MinstDataSetExtractor():
                     self.checkImagesFile(fileSize, magicNumber, imagesNumber,pixelNumbers)
             # read body
             images=dict()
-            pixels=list()
+            image=list()
             imageIndex=0
             pixelIndex=0
+            print("DEBUG : imagesNumber="+str(imagesNumber))
             while imageIndex<imagesNumber:
+                print("DEBUG : imageIndex="+str(imageIndex))
                 # read image
-                if pixelIndex<pixelNumbers:
+                print("DEBUG : pixelNumbers="+str(pixelNumbers))
+                while pixelIndex<pixelNumbers:
+                    print("DEBUG : pixelIndex="+str(pixelIndex))
                     binaryValue = imagesFile.read(DataTypeSize.BYTE_SIZE.value)
                     numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
-                    pixels.append(numericValue)
+                    image.append(numericValue)
                     pixelIndex=pixelIndex+1
                 # add image to dictionary
-                else:
-                    images[imageIndex]=pixels
-                    imageIndex=imageIndex+1
-                    pixels = list()
-                    pixelIndex = 0
+                images[imageIndex]=image
+                imageIndex=imageIndex+1
+                pixels = list()
+                pixelIndex = 0
             imagesFile.close()
         # logger output
         logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractImages.__name__,(width , height, images))
@@ -289,7 +300,9 @@ if __name__ == '__main__':
     #mdse.extractDataSet()
     # CHECK EXTRACTED DATA
     testData=TestData()
-    testData.load("/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/TEST/0.json")
-    print(str(testData))
+    for i in range(0,10):
+        testData.load("/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/TEST/"+str(i)+".json")
+        print(str(testData))
+    #    pass
     pass
 pass

@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
 # imports
+from inspect import signature
 from enum import Enum, unique
 from os import stat
+from os.path import join
 from pythoncommontools.logger import logger
+from pythoncommontools.logger.logger import loadLogger
+from pythoncommontools.objectUtil.objectUtil import methodArgsStringRepresentation
+from pythoncommontools.configurationLoader import configurationLoader
 # contantes
-CONFIGURATION_FILE="../conf/"
+CONFIGURATION_FILE=join("..","conf","minsdatasetextractor.conf")
 FILE_MODE="rb"
 ENDIAN="big"
+# load configuration
+configurationLoader.loadConfiguration( CONFIGURATION_FILE )
+loadLogger("MinstDataSetExtractor",CONFIGURATION_FILE)
 # data type size
 @unique
 class DataTypeSize(Enum):
@@ -145,6 +153,10 @@ class MinstDataSetExtractor():
         pass
     # constructor
     def __init__(self, labelsFileName, imagesFileName, outputDirectoryName,patternValue):
+        # logger context
+        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.__init__).parameters,locals())
+        # logger input
+        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.__init__.__name__,message=argsStr)
         # check patternValue
         patternValues=Pattern.listValues()
         if patternValue.upper() not in patternValues:
@@ -154,6 +166,8 @@ class MinstDataSetExtractor():
         self.imagesFileName=imagesFileName
         self.patternValue=patternValue
         self.outputDirectoryName=outputDirectoryName
+        # logger output
+        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.__init__.__name__)
 # run extractor
 if __name__ == '__main__':
     labelsFileName="/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-labels.idx1-ubyte"

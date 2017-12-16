@@ -34,7 +34,7 @@ setup(
     version=__version__,
     description="MNIST data set extractor",
     packages=modules,
-    dependency_links=[YGGDRASIL_REP+"pythoncommontools",YGGDRASIL_REP+"neuralnetworknommon"],
+    dependency_links=[YGGDRASIL_REP+"pythoncommontools",YGGDRASIL_REP+"neuralnetworkcommon"],
     install_requires=["pythoncommontools"],
     classifiers=[
         'Programming Language :: Python :: 3',

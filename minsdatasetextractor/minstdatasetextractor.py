@@ -5,6 +5,7 @@ from enum import Enum, unique
 from os import stat,makedirs,linesep
 from os.path import join, exists, isdir
 from json import dumps, loads
+from argparse import ArgumentParser
 from pythoncommontools.logger import logger
 from pythoncommontools.objectUtil.objectUtil import methodArgsStringRepresentation
 from pythoncommontools.configurationLoader import configurationLoader
@@ -276,17 +277,26 @@ class MinstDataSetExtractor():
         logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.__init__.__name__)
 # run extractor
 if __name__ == '__main__':
+    # parse arguments
+    parser = ArgumentParser()
+    parser.add_argument("action", help="action to perform : [extract|display]")
+    parser.add_argument("-l","--label", help="with extract, label file")
+    parser.add_argument("-i","--image", help="with extract, image file")
+    parser.add_argument("-o","--output", help="with extract, output directory")
+    parser.add_argument("-p","--pattern", help="with extract, pattern", choices=Pattern.listValues())
+    parser.add_argument("-f","--files", help="with display, list of files", nargs='+')
+    arguments = parser.parse_args()
     # EXTRACT DATA SET
-    labelsFileName="/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-labels.idx1-ubyte"
-    imagesFileName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-images.idx3-ubyte"
-    patternValue=Pattern.TEST.value
-    outputDirectoryName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/"+patternValue
-    mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,outputDirectoryName,patternValue)
-    mdse.extractDataSet()
+    #labelsFileName="/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-labels.idx1-ubyte"
+    #imagesFileName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-images.idx3-ubyte"
+    #patternValue=Pattern.TEST.value
+    #outputDirectoryName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/"+patternValue
+    #mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,outputDirectoryName,patternValue)
+    #mdse.extractDataSet()
     # CHECK EXTRACTED DATA
-    testData=TestData()
-    for i in range(0,10):
-        testData.load("/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/TEST/"+str(i)+TEST_FILE_EXTENSION)
-        print(str(testData))
+    #testData=TestData()
+    #for i in range(0,10):
+    #    testData.load("/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/TEST/"+str(i)+TEST_FILE_EXTENSION)
+    #    print(str(testData))
     pass
 pass

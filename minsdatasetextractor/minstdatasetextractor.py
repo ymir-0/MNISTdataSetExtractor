@@ -12,6 +12,7 @@ from pythoncommontools.configurationLoader import configurationLoader
 # contantes
 CURRENT_DIRECTORY = realpath(__file__).rsplit(sep, 1)[0]
 CONFIGURATION_FILE=join(CURRENT_DIRECTORY,"..","conf","minsdatasetextractor.conf")
+README_FILE=join(CURRENT_DIRECTORY,"..","README.txt")
 ENDIAN="big"
 IMAGE_MARKUP="image"
 TEST_FILE_EXTENSION=".json"
@@ -21,11 +22,11 @@ REPRENSATION_GRADIENT=(" ","░","▒","▓","█")
 configurationLoader.loadConfiguration( CONFIGURATION_FILE )
 logger.loadLogger("MinstDataSetExtractor",CONFIGURATION_FILE)
 # file mode
-@unique
 class FileMode(Enum):
     BINARY="rb"
     TEST_WRITE="wt"
     TEST_READ="rt"
+    README="rt"
 # data type size
 @unique
 class DataTypeSize(Enum):
@@ -265,12 +266,7 @@ class MinstDataSetExtractor():
         argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.__init__).parameters,locals())
         # logger input
         logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.__init__.__name__,message=argsStr)
-        # check patternValue
-        patternValues=Pattern.listValues()
-        if patternValue.upper() not in patternValues:
-            errorMessage="Pattern does not match : expected=" + str(patternValues) + " actual=" + str(patternValue)
-            logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.__init__.__name__, errorMessage)
-            raise Exception(errorMessage)
+        # INFO: pattern parameter has already been checked by the system
         # create output folder is needed
         if exists(outputDirectoryName):
             if not isdir(outputDirectoryName):
@@ -288,9 +284,14 @@ class MinstDataSetExtractor():
         logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.__init__.__name__)
 # run extractor
 if __name__ == '__main__':
+    # display readme
+    testFile = open(README_FILE, FileMode.README.value)
+    readme=testFile.read()
+    testFile.close()
+    print(readme)
     # parse arguments parser
     parser = ArgumentParser()
-    parser.add_argument("-a","--action", help="action to perform", choices=Action.listValues())
+    parser.add_argument("action", help="action to perform", choices=Action.listValues())
     parser.add_argument("-l","--label", help="with extract, label file")
     parser.add_argument("-i","--image", help="with extract, image file")
     parser.add_argument("-o","--output", help="with extract, output directory")
@@ -298,6 +299,7 @@ if __name__ == '__main__':
     parser.add_argument("-f","--files", help="with display, list of files", nargs='+')
     # parse arguments
     arguments = parser.parse_args()
+    # INFO: those parameters will be checked by the system : action & pattern
     # extract
     if arguments.action==Action.EXTRACT.value:
         labelsFileName=arguments.label
@@ -312,8 +314,3 @@ if __name__ == '__main__':
         for file in arguments.files:
             testData.load(file)
             print(str(testData))
-    # unknown parameter
-    else :
-        pass
-    pass
-pass

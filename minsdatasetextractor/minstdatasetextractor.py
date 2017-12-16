@@ -45,7 +45,7 @@ class Pattern(Enum):
 # test datum
 class TestData():
     # constructor
-    def __init__(self, width=0, height=0, images=[], labels="",pattern=""):
+    def __init__(self, width=0, height=0, image=[], label="",pattern=""):
         # logger context
         argsStr = methodArgsStringRepresentation(signature(TestData.__init__).parameters,locals())
         # logger input
@@ -53,8 +53,8 @@ class TestData():
         # construct object
         self.width = width
         self.height = height
-        self.images = images
-        self.labels = labels
+        self.image = image
+        self.label = label
         self.pattern = pattern
         # logger output
         logger.loadedLogger.output(__name__, TestData.__name__, TestData.__init__.__name__)
@@ -76,19 +76,14 @@ class TestData():
         representation="None"
         if self.__dict__:
             # string standard data
-            representation=str({"labels":self.labels,"pattern":self.pattern,"width":self.width,"height":self.height})+linesep
+            representation=str({"label":self.label,"pattern":self.pattern,"width":self.width,"height":self.height})+linesep
             # string image
             rawIndex=0
             columnIndex=0
             pixelsNumber=self.width*self.height
-            print("DEBUG : calculated pixelsNumber="+str(pixelsNumber))
-            print("DEBUG : stored pixelsNumber="+str(len(self.images)))
             for pixelIndex in range(0,pixelsNumber):
-                print("DEBUG : pixelIndex=" + str(pixelIndex))
-                print("DEBUG : rawIndex=" + str(rawIndex))
-                print("DEBUG : columnIndex=" + str(columnIndex))
                 # add pixel related gradient
-                pixelValue=self.images[pixelIndex]
+                pixelValue=self.image[pixelIndex]
                 gradientIndex=int(pixelValue/REPRENSATION_INTERVAL)
                 gradient=REPRENSATION_GRADIENT[gradientIndex]
                 representation=representation+gradient
@@ -201,16 +196,13 @@ class MinstDataSetExtractor():
                     self.checkImagesFile(fileSize, magicNumber, imagesNumber,pixelNumbers)
             # read body
             images=dict()
-            image=list()
             imageIndex=0
-            pixelIndex=0
-            print("DEBUG : imagesNumber="+str(imagesNumber))
+            # for each image
             while imageIndex<imagesNumber:
-                print("DEBUG : imageIndex="+str(imageIndex))
+                image = list()
+                pixelIndex = 0
                 # read image
-                print("DEBUG : pixelNumbers="+str(pixelNumbers))
                 while pixelIndex<pixelNumbers:
-                    print("DEBUG : pixelIndex="+str(pixelIndex))
                     binaryValue = imagesFile.read(DataTypeSize.BYTE_SIZE.value)
                     numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
                     image.append(numericValue)
@@ -292,17 +284,17 @@ class MinstDataSetExtractor():
 # run extractor
 if __name__ == '__main__':
     # EXTRACT DATA SET
-    #labelsFileName="/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-labels.idx1-ubyte"
-    #imagesFileName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-images.idx3-ubyte"
-    #patternValue=Pattern.TEST.value
-    #outputDirectoryName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/"+patternValue
-    #mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,outputDirectoryName,patternValue)
-    #mdse.extractDataSet()
+    labelsFileName="/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-labels.idx1-ubyte"
+    imagesFileName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-images.idx3-ubyte"
+    patternValue=Pattern.TEST.value
+    outputDirectoryName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/"+patternValue
+    mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,outputDirectoryName,patternValue)
+    mdse.extractDataSet()
     # CHECK EXTRACTED DATA
-    testData=TestData()
-    for i in range(0,10):
-        testData.load("/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/TEST/"+str(i)+".json")
-        print(str(testData))
+    #testData=TestData()
+    #for i in range(0,10):
+    #    testData.load("/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/TEST/"+str(i)+".json")
+    #    print(str(testData))
     #    pass
     pass
 pass

@@ -4,6 +4,8 @@ from os.path import join, dirname, isdir
 from setuptools import setup
 from importlib import import_module
 from pkgutil import walk_packages
+# constants
+YGGDRASIL_REP="http://91.121.9.53:81/"
 # parse recursively a module
 # this code is an adaptation from https://stackoverflow.com/questions/3365740/how-to-import-all-submodules
 def import_submodules(package):
@@ -32,7 +34,7 @@ setup(
     version=__version__,
     description="MNIST data set extractor",
     packages=modules,
-    dependency_links=["http://91.121.9.53:81/pythoncommontools"], # 91.121.9.53 : yggdrasil
+    dependency_links=[YGGDRASIL_REP+"pythoncommontools",YGGDRASIL_REP+"neuralnetworknommon"],
     install_requires=["pythoncommontools"],
     classifiers=[
         'Programming Language :: Python :: 3',

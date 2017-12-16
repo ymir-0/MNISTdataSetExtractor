@@ -2,30 +2,28 @@
 # imports
 from inspect import signature
 from enum import Enum, unique
-from os import stat,makedirs,linesep, sep
+from os import stat,makedirs,sep
 from os.path import join, exists, isdir, realpath
-from json import dumps, loads
+from json import dumps
 from argparse import ArgumentParser
+from neuralnetworkcommon.testdata import TestData
 from pythoncommontools.logger import logger
 from pythoncommontools.objectUtil.objectUtil import methodArgsStringRepresentation
 from pythoncommontools.configurationLoader import configurationLoader
-# contantes
+# contants
 CURRENT_DIRECTORY = realpath(__file__).rsplit(sep, 1)[0]
 CONFIGURATION_FILE=join(CURRENT_DIRECTORY,"..","conf","minsdatasetextractor.conf")
 README_FILE=join(CURRENT_DIRECTORY,"..","README.txt")
 ENDIAN="big"
-IMAGE_MARKUP="image"
 TEST_FILE_EXTENSION=".json"
-REPRENSATION_INTERVAL=51.2 # we have 256 grey level and 5 gradient char. 256/5=51.2
-REPRENSATION_GRADIENT=(" ","░","▒","▓","█")
 # load configuration
 configurationLoader.loadConfiguration( CONFIGURATION_FILE )
 logger.loadLogger("MinstDataSetExtractor",CONFIGURATION_FILE)
 # file mode
+@unique
 class FileMode(Enum):
     BINARY="rb"
     TEST_WRITE="wt"
-    TEST_READ="rt"
     README="rt"
 # data type size
 @unique
@@ -72,63 +70,6 @@ class Action(Enum):
         values=list()
         for action in Action: values.append(action.value.upper())
         return values
-# test datum
-class TestData():
-    # constructor
-    def __init__(self, width=0, height=0, image=[], label="",pattern=""):
-        # logger context
-        argsStr = methodArgsStringRepresentation(signature(TestData.__init__).parameters,locals())
-        # logger input
-        logger.loadedLogger.input(__name__, TestData.__name__, TestData.__init__.__name__,message=argsStr)
-        # construct object
-        self.width = width
-        self.height = height
-        self.image = image
-        self.label = label
-        self.pattern = pattern
-        # logger output
-        logger.loadedLogger.output(__name__, TestData.__name__, TestData.__init__.__name__)
-    def load(self, fileName):
-        # logger context
-        argsStr = methodArgsStringRepresentation(signature(TestData.__init__).parameters, locals())
-        # logger input
-        logger.loadedLogger.input(__name__, TestData.__name__, TestData.__init__.__name__, message=argsStr)
-        # construct object
-        file = open(fileName, FileMode.TEST_READ.value)
-        jsonTestData=file.read()
-        file.close()
-        loadedDict = loads(jsonTestData)
-        self.__dict__.update(loadedDict)
-        # logger output
-        logger.loadedLogger.output(__name__, TestData.__name__, TestData.__init__.__name__)
-    # reprensentation
-    def __repr__(self):
-        representation=""
-        if self.__dict__:
-            # string standard data
-            standardData=self.__dict__.copy()
-            del standardData[IMAGE_MARKUP]
-            representation=str(standardData)+linesep
-            # string image
-            rawIndex=0
-            columnIndex=0
-            pixelsNumber=self.width*self.height
-            for pixelIndex in range(0,pixelsNumber):
-                # add pixel related gradient
-                pixelValue=self.image[pixelIndex]
-                gradientIndex=int(pixelValue/REPRENSATION_INTERVAL)
-                gradient=REPRENSATION_GRADIENT[gradientIndex]
-                representation=representation+gradient
-                # check if new new line
-                if columnIndex<self.width-1:
-                    columnIndex=columnIndex+1
-                else:
-                    representation=representation+linesep
-                    columnIndex=0
-                    rawIndex=rawIndex+1
-        return representation
-    def __str__(self):
-        return self.__repr__()
 # MINST data set extractor
 class MinstDataSetExtractor():
     # extract data set

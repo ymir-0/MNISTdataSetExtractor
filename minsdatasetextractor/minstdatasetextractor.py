@@ -116,153 +116,39 @@ class MinstDataSetExtractor():
         argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.extractDataSet).parameters,locals())
         # logger input
         logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractDataSet.__name__,message=argsStr)
-        # extract separated data
-        labels=self.extractLabels()
-        self.width, self.height, images = self.extractImages()
-        # check size consistancy labels / images
-        if len(labels)!=len(images):
-            errorMessage="Size between labels & images does not match : labels=" + str(len(labels)) + " images=" + str(len(images))
-            logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractDataSet.__name__, errorMessage)
-            raise Exception(errorMessage)
-        # write data
-        self.writeData(images ,labels)
+        # parse labels file
+        with open(self.labelsFileName, FileMode.BINARY.value) as labelsFile:
+            # parse labels file header
+            self.parseLabelsFileHeader(labelsFile)
+            pass
+        labelsFile.close()
         # logger output
         logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractDataSet.__name__)
-    # extract labels
-    def extractLabels(self):
+    # parse labels file header
+    def parseLabelsFileHeader(self,labelsFile):
         # logger context
-        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.extractLabels).parameters,locals())
+        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.parseLabelsFileHeader).parameters,locals())
         # logger input
-        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractLabels.__name__,message=argsStr)
+        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.parseLabelsFileHeader.__name__,message=argsStr)
         # get file size
         fileSize=stat(self.labelsFileName).st_size
-        # read file
-        with open(self.labelsFileName, FileMode.BINARY.value) as labelsFile:
-            # read header
-            for index in range(0,HeaderSize.LABEL.value):
-                binaryValue = labelsFile.read(DataTypeSize.INTEGER_SIZE.value)
-                numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
-                if index==0 :
-                    magicNumber=numericValue
-                else:
-                    labelsNumber = numericValue
-                    self.checkLabelsFile(fileSize, magicNumber, labelsNumber)
-            # read body
-            labels=dict()
-            index=0
-            while index<labelsNumber:
-                binaryValue = labelsFile.read(DataTypeSize.BYTE_SIZE.value)
-                numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
-                labels[index]=str(numericValue)
-                index=index+1
-            labelsFile.close()
+        # parse labels file header
+        for index in range(0, HeaderSize.LABEL.value):
+            binaryValue = labelsFile.read(DataTypeSize.INTEGER_SIZE.value)
+            numericValue = int.from_bytes(binaryValue, byteorder=ENDIAN)
+            # control magik number
+            if index == 0:
+                magicNumber = numericValue
+                if MagicNumber.LABEL.value != magicNumber:
+                    errorMessage = "Labels magic number does not match : expected=" + str(MagicNumber.LABEL.value) + " actual=" + str(magicNumber)
+                    logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__,MinstDataSetExtractor.parseLabelsFileHeader.__name__, errorMessage)
+                    raise Exception(errorMessage)
+            else:
+                labelsNumber = numericValue
         # logger output
-        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractLabels.__name__,labels)
+        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.parseLabelsFileHeader.__name__,labelsNumber)
         # return
-        return labels
-    # check labels file
-    def checkLabelsFile(self,fileSize,magicNumber,labelsNumber):
-        # logger context
-        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.checkLabelsFile).parameters,locals())
-        # logger input
-        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkLabelsFile.__name__,message=argsStr)
-        # check magic number
-        if MagicNumber.LABEL.value != magicNumber:
-            errorMessage="Labels magic number does not match : expected=" + str(MagicNumber.LABEL.value) + " actual="+str(magicNumber)
-            logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkLabelsFile.__name__, errorMessage)
-            raise Exception(errorMessage)
-        # check size
-        expectedSize=labelsNumber+(HeaderSize.LABEL.value*DataTypeSize.INTEGER_SIZE.value)
-        if expectedSize != fileSize:
-            errorMessage="Labels file size does not match : expected=" + str(expectedSize) + " actual="+str(fileSize)
-            logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkLabelsFile.__name__, errorMessage)
-            raise Exception(errorMessage)
-        # logger output
-        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkLabelsFile.__name__)
-    # extract images
-    def extractImages(self):
-        # logger context
-        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.extractImages).parameters,locals())
-        # logger input
-        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractImages.__name__,message=argsStr)
-        # get file size
-        fileSize=stat(self.imagesFileName).st_size
-        # read file
-        with open(self.imagesFileName, FileMode.BINARY.value) as imagesFile:
-            # read header
-            for index in range(0,HeaderSize.IMAGE.value):
-                binaryValue = imagesFile.read(DataTypeSize.INTEGER_SIZE.value)
-                numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
-                if index==0 :
-                    magicNumber=numericValue
-                elif index == 1:
-                    imagesNumber = numericValue
-                elif index == 2:
-                    width = numericValue
-                else:
-                    height = numericValue
-                    pixelNumbers = width * height
-                    self.checkImagesFile(fileSize, magicNumber, imagesNumber,pixelNumbers)
-            # read body
-            images=dict()
-            imageIndex=0
-            # for each image
-            while imageIndex<imagesNumber:
-                image = list()
-                pixelIndex = 0
-                # read image
-                while pixelIndex<pixelNumbers:
-                    binaryValue = imagesFile.read(DataTypeSize.BYTE_SIZE.value)
-                    numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
-                    image.append(numericValue)
-                    pixelIndex=pixelIndex+1
-                # add image to dictionary
-                images[imageIndex]=image
-                imageIndex=imageIndex+1
-                pixels = list()
-                pixelIndex = 0
-            imagesFile.close()
-        # logger output
-        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractImages.__name__,(width , height, images))
-        # return
-        return width , height, images
-    # check images file
-    def checkImagesFile(self,fileSize,magicNumber,imagesNumber,pixelNumbers):
-        # logger context
-        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.checkImagesFile).parameters,locals())
-        # logger input
-        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkImagesFile.__name__,message=argsStr)
-        # check magic number
-        if MagicNumber.IMAGE.value != magicNumber:
-            errorMessage="Images magic number does not match : expected=" + str(MagicNumber.IMAGE.value) + " actual="+str(magicNumber)
-            logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkImagesFile.__name__, errorMessage)
-            raise Exception(errorMessage)
-        # check size
-        expectedSize=(imagesNumber*pixelNumbers)+(HeaderSize.IMAGE.value*DataTypeSize.INTEGER_SIZE.value)
-        if expectedSize != fileSize:
-            errorMessage="Images file size does not match : expected=" + str(expectedSize) + " actual="+str(fileSize)
-            logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkImagesFile.__name__, errorMessage)
-            raise Exception(errorMessage)
-        # logger output
-        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkImagesFile.__name__)
-    # write data
-    def writeData(self, images, labels):
-        # logger context
-        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.writeData).parameters,locals())
-        # logger input
-        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.writeData.__name__,message=argsStr)
-        # for each test data
-        for index in range(0, len(images)):
-            # encode it
-            objectTestData=TestData(self.width, self.height, images[index], labels[index],self.patternValue)
-            dictTestData=dumps(objectTestData.__dict__)
-            # write it into file
-            testFileName=join(self.outputDirectoryName,str(index)+TEST_FILE_EXTENSION)
-            testFile = open(testFileName, FileMode.TEST_WRITE.value)
-            testFile.write(dictTestData)
-            testFile.close()
-        # logger output
-        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.writeData.__name__)
+        return labelsNumber
     # constructor
     def __init__(self, labelsFileName, imagesFileName, outputDirectoryName,patternValue):
         # logger context
@@ -300,10 +186,10 @@ if __name__ == '__main__':
     mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,outputDirectoryName,patternValue)
     mdse.extractDataSet()
     # CHECK EXTRACTED DATA
-    testData=TestData()
-    for i in range(0,10):
-        testData.load("/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/TEST/"+str(i)+TEST_FILE_EXTENSION)
-        print(str(testData))
+    #testData=TestData()
+    #for i in range(0,10):
+    #    testData.load("/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/TEST/"+str(i)+TEST_FILE_EXTENSION)
+    #    print(str(testData))
     #    pass
     pass
 pass

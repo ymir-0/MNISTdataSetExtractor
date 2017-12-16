@@ -34,6 +34,16 @@ class DataTypeSize(Enum):
 class HeaderSize(Enum):
     LABEL=2
     IMAGE=4
+@unique
+class HeaderLabelOffset(Enum):
+    MAGIK_NUMBER=0
+    LABELS_NUMBER=1
+@unique
+class HeaderImageOffset(Enum):
+    MAGIK_NUMBER=0
+    IMAGES_NUMBER=1
+    WIDTH=2
+    HEIGHT=3
 # header size
 @unique
 class MagicNumber(Enum):
@@ -103,11 +113,9 @@ class TestData():
                     representation=representation+linesep
                     columnIndex=0
                     rawIndex=rawIndex+1
-            pass
         return representation
     def __str__(self):
         return self.__repr__()
-    pass
 # MINST data set extractor
 class MinstDataSetExtractor():
     # extract data set
@@ -148,7 +156,7 @@ class MinstDataSetExtractor():
             binaryValue = labelsFile.read(DataTypeSize.INTEGER_SIZE.value)
             numericValue = int.from_bytes(binaryValue, byteorder=ENDIAN)
             # control magik number
-            if index == 0:
+            if index == HeaderLabelOffset.MAGIK_NUMBER.value:
                 magicNumber = numericValue
                 if MagicNumber.LABEL.value != magicNumber:
                     errorMessage = "Labels magic number does not match : expected=" + str(MagicNumber.LABEL.value) + " actual=" + str(magicNumber)
@@ -178,7 +186,7 @@ class MinstDataSetExtractor():
             binaryValue = imagesFile.read(DataTypeSize.INTEGER_SIZE.value)
             numericValue = int.from_bytes(binaryValue, byteorder=ENDIAN)
             # control magik number
-            if index == 0:
+            if index == HeaderImageOffset.MAGIK_NUMBER.value:
                 magicNumber = numericValue
                 # check magic number
                 if MagicNumber.IMAGE.value != magicNumber:
@@ -186,10 +194,10 @@ class MinstDataSetExtractor():
                     logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__,MinstDataSetExtractor.parseImagesFileHeader.__name__, errorMessage)
                     raise Exception(errorMessage)
             # read images number
-            elif index == 1:
+            elif index == HeaderImageOffset.IMAGES_NUMBER.value:
                 imagesNumber = numericValue
             # read images width
-            elif index == 2:
+            elif index == HeaderImageOffset.WIDTH.value:
                 width = numericValue
             # read images height and check file size
             else:
@@ -200,7 +208,6 @@ class MinstDataSetExtractor():
                     errorMessage = "Images file size does not match : expected=" + str(expectedSize) + " actual=" + str(fileSize)
                     logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__,MinstDataSetExtractor.parseImagesFileHeader.__name__, errorMessage)
                     raise Exception(errorMessage)
-                pass
         # logger output
         logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.parseImagesFileHeader.__name__,(imagesNumber, width , height))
         # return
@@ -269,17 +276,16 @@ class MinstDataSetExtractor():
 # run extractor
 if __name__ == '__main__':
     # EXTRACT DATA SET
-    #labelsFileName="/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-labels.idx1-ubyte"
-    #imagesFileName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-images.idx3-ubyte"
-    #patternValue=Pattern.TEST.value
-    #outputDirectoryName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/"+patternValue
-    #mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,outputDirectoryName,patternValue)
-    #mdse.extractDataSet()
+    labelsFileName="/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-labels.idx1-ubyte"
+    imagesFileName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-images.idx3-ubyte"
+    patternValue=Pattern.TEST.value
+    outputDirectoryName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/"+patternValue
+    mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,outputDirectoryName,patternValue)
+    mdse.extractDataSet()
     # CHECK EXTRACTED DATA
     testData=TestData()
     for i in range(0,10):
         testData.load("/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/TEST/"+str(i)+TEST_FILE_EXTENSION)
         print(str(testData))
-    #    pass
     pass
 pass

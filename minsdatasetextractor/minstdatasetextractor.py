@@ -2,8 +2,8 @@
 # imports
 from inspect import signature
 from enum import Enum, unique
-from os import stat
-from os.path import join
+from os import stat,makedirs
+from os.path import join, exists, isdir
 from pythoncommontools.logger import logger
 from pythoncommontools.objectUtil.objectUtil import methodArgsStringRepresentation
 from pythoncommontools.configurationLoader import configurationLoader
@@ -199,11 +199,16 @@ class MinstDataSetExtractor():
         argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.writeData).parameters,locals())
         # logger input
         logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.writeData.__name__,message=argsStr)
-        # encode & write each data
+        # for each test data
         for index in range(0, len(images)):
+            # encode it
             objectTestData=TestData(self.width, self.height, images[index], labels[index],self.patternValue)
             encodedTestData=ComplexJsonEncoder.dumpComplexObject(objectTestData)
-            pass
+            # write it into file
+            testFileName=join(self.outputDirectoryName,str(index)+".json")
+            testFile = open(testFileName, "w")
+            testFile.write(encodedTestData)
+            testFile.close()
         # logger output
         logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.writeData.__name__)
     # constructor
@@ -218,6 +223,14 @@ class MinstDataSetExtractor():
             errorMessage="Pattern does not match : expected=" + str(patternValues) + " actual=" + str(patternValue)
             logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.__init__.__name__, errorMessage)
             raise Exception(errorMessage)
+        # create output folder is needed
+        if exists(outputDirectoryName):
+            if not isdir(outputDirectoryName):
+                errorMessage = "There is already something at output folder : " +outputDirectoryName
+                logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__,MinstDataSetExtractor.__init__.__name__, errorMessage)
+                raise Exception(errorMessage)
+        else:
+            makedirs(outputDirectoryName)
         # construct object
         self.labelsFileName=labelsFileName
         self.imagesFileName=imagesFileName

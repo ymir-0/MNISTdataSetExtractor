@@ -2,7 +2,7 @@
 # imports
 from inspect import signature
 from enum import Enum, unique
-from os import stat,makedirs
+from os import stat,makedirs,linesep
 from os.path import join, exists, isdir
 from json import dumps, loads
 from pythoncommontools.logger import logger
@@ -12,6 +12,8 @@ from pythoncommontools.configurationLoader import configurationLoader
 CONFIGURATION_FILE=join("..","conf","minsdatasetextractor.conf")
 FILE_MODE="rb"
 ENDIAN="big"
+REPRENSATION_INTERVAL=51.2 # we have 256 grey level and 5 gradient char. 256/5=51.2
+REPRENSATION_GRADIENT=(" ","░","▒","▓","█")
 # load configuration
 configurationLoader.loadConfiguration( CONFIGURATION_FILE )
 logger.loadLogger("MinstDataSetExtractor",CONFIGURATION_FILE)
@@ -43,7 +45,7 @@ class Pattern(Enum):
 # test datum
 class TestData():
     # constructor
-    def __init__(self, width=None, height=None, images=None, labels=None,pattern=None):
+    def __init__(self, width=0, height=0, images=None, labels=None,pattern=None):
         # logger context
         argsStr = methodArgsStringRepresentation(signature(TestData.__init__).parameters,locals())
         # logger input
@@ -73,7 +75,23 @@ class TestData():
     def __repr__(self):
         representation="None"
         if self.__dict__:
-            representation=str({"labels":self.labels,"pattern":self.pattern,"width":self.width,"height":self.height})
+            # string standard data
+            representation=str({"labels":self.labels,"pattern":self.pattern,"width":self.width,"height":self.height})+linesep
+            # string image
+            columnIndex=0
+            for pixelIndex in range(0,self.width*self.height):
+                # add pixel related gradient
+                pixelValue=self.images[pixelIndex]
+                gradientIndex=int(pixelValue/REPRENSATION_INTERVAL)
+                gradient=REPRENSATION_GRADIENT[gradientIndex]
+                representation=representation+gradient
+                # check if new new line
+                if columnIndex<self.width:
+                    columnIndex=columnIndex+1
+                else:
+                    representation=representation+linesep
+                    columnIndex=0
+            pass
         return representation
     def __str__(self):
         return self.__repr__()

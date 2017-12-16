@@ -69,6 +69,15 @@ class TestData():
         self.__dict__.update(loadedDict)
         # logger output
         logger.loadedLogger.output(__name__, TestData.__name__, TestData.__init__.__name__)
+    # reprensentation
+    def __repr__(self):
+        representation="None"
+        if self.__dict__:
+            representation=str({"labels":self.labels,"pattern":self.pattern,"width":self.width,"height":self.height})
+        return representation
+    def __str__(self):
+        return self.__repr__()
+    pass
 # MINST data set extractor
 class MinstDataSetExtractor():
     # extract data set
@@ -263,6 +272,6 @@ if __name__ == '__main__':
     # CHECK EXTRACTED DATA
     testData=TestData()
     testData.load("/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/TEST/0.json")
-    print(testData)
+    print(str(testData))
     pass
 pass

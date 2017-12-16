@@ -3,14 +3,15 @@
 from inspect import signature
 from enum import Enum, unique
 from os import stat,makedirs,linesep
-from os.path import join, exists, isdir
+from os.path import join, exists, isdir, dirname,realpath
 from json import dumps, loads
 from argparse import ArgumentParser
 from pythoncommontools.logger import logger
 from pythoncommontools.objectUtil.objectUtil import methodArgsStringRepresentation
 from pythoncommontools.configurationLoader import configurationLoader
 # contantes
-CONFIGURATION_FILE=join("..","conf","minsdatasetextractor.conf")
+CURRENT_DIRECTORY = realpath(__file__).rsplit('/', 1)[0]
+CONFIGURATION_FILE=join(CURRENT_DIRECTORY,"..","conf","minsdatasetextractor.conf")
 ENDIAN="big"
 IMAGE_MARKUP="image"
 TEST_FILE_EXTENSION=".json"

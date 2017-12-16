@@ -4,10 +4,10 @@ from inspect import signature
 from enum import Enum, unique
 from os import stat,makedirs
 from os.path import join, exists, isdir
+from json import dumps, loads
 from pythoncommontools.logger import logger
 from pythoncommontools.objectUtil.objectUtil import methodArgsStringRepresentation
 from pythoncommontools.configurationLoader import configurationLoader
-from pythoncommontools.jsonEncoderDecoder.complexJsonEncoderDecoder import ComplexJsonEncoder
 # contantes
 CONFIGURATION_FILE=join("..","conf","minsdatasetextractor.conf")
 FILE_MODE="rb"
@@ -43,7 +43,7 @@ class Pattern(Enum):
 # test datum
 class TestData():
     # constructor
-    def __init__(self, width, height, images, labels,pattern):
+    def __init__(self, width=None, height=None, images=None, labels=None,pattern=None):
         # logger context
         argsStr = methodArgsStringRepresentation(signature(TestData.__init__).parameters,locals())
         # logger input
@@ -54,6 +54,19 @@ class TestData():
         self.images = images
         self.labels = labels
         self.pattern = pattern
+        # logger output
+        logger.loadedLogger.output(__name__, TestData.__name__, TestData.__init__.__name__)
+    def load(self, fileName):
+        # logger context
+        argsStr = methodArgsStringRepresentation(signature(TestData.__init__).parameters, locals())
+        # logger input
+        logger.loadedLogger.input(__name__, TestData.__name__, TestData.__init__.__name__, message=argsStr)
+        # construct object
+        file = open(fileName, "r")
+        jsonTestData=file.read()
+        file.close()
+        loadedDict = loads(jsonTestData)
+        self.__dict__.update(loadedDict)
         # logger output
         logger.loadedLogger.output(__name__, TestData.__name__, TestData.__init__.__name__)
 # MINST data set extractor
@@ -203,11 +216,11 @@ class MinstDataSetExtractor():
         for index in range(0, len(images)):
             # encode it
             objectTestData=TestData(self.width, self.height, images[index], labels[index],self.patternValue)
-            encodedTestData=ComplexJsonEncoder.dumpComplexObject(objectTestData)
+            dictTestData=dumps(objectTestData.__dict__)
             # write it into file
             testFileName=join(self.outputDirectoryName,str(index)+".json")
             testFile = open(testFileName, "w")
-            testFile.write(encodedTestData)
+            testFile.write(dictTestData)
             testFile.close()
         # logger output
         logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.writeData.__name__)
@@ -240,11 +253,16 @@ class MinstDataSetExtractor():
         logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.__init__.__name__)
 # run extractor
 if __name__ == '__main__':
-    labelsFileName="/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-labels.idx1-ubyte"
-    imagesFileName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-images.idx3-ubyte"
-    patternValue=Pattern.TEST.value
-    outputDirectoryName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/"+patternValue
-    mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,outputDirectoryName,patternValue)
-    mdse.extractDataSet()
+    # EXTRACT DATA SET
+    #labelsFileName="/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-labels.idx1-ubyte"
+    #imagesFileName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-images.idx3-ubyte"
+    #patternValue=Pattern.TEST.value
+    #outputDirectoryName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/"+patternValue
+    #mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,outputDirectoryName,patternValue)
+    #mdse.extractDataSet()
+    # CHECK EXTRACTED DATA
+    testData=TestData()
+    testData.load("/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/TEST/0.json")
+    print(testData)
     pass
 pass

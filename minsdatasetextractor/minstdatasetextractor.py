@@ -10,13 +10,20 @@ from pythoncommontools.objectUtil.objectUtil import methodArgsStringRepresentati
 from pythoncommontools.configurationLoader import configurationLoader
 # contantes
 CONFIGURATION_FILE=join("..","conf","minsdatasetextractor.conf")
-FILE_MODE="rb"
 ENDIAN="big"
+IMAGE_MARKUP="image"
+TEST_FILE_EXTENSION=".json"
 REPRENSATION_INTERVAL=51.2 # we have 256 grey level and 5 gradient char. 256/5=51.2
 REPRENSATION_GRADIENT=(" ","░","▒","▓","█")
 # load configuration
 configurationLoader.loadConfiguration( CONFIGURATION_FILE )
 logger.loadLogger("MinstDataSetExtractor",CONFIGURATION_FILE)
+# file mode
+@unique
+class FileMode(Enum):
+    BINARY="rb"
+    TEST_WRITE="wt"
+    TEST_READ="rt"
 # data type size
 @unique
 class DataTypeSize(Enum):
@@ -64,7 +71,7 @@ class TestData():
         # logger input
         logger.loadedLogger.input(__name__, TestData.__name__, TestData.__init__.__name__, message=argsStr)
         # construct object
-        file = open(fileName, "r")
+        file = open(fileName, FileMode.TEST_READ.value)
         jsonTestData=file.read()
         file.close()
         loadedDict = loads(jsonTestData)
@@ -73,10 +80,12 @@ class TestData():
         logger.loadedLogger.output(__name__, TestData.__name__, TestData.__init__.__name__)
     # reprensentation
     def __repr__(self):
-        representation="None"
+        representation=""
         if self.__dict__:
             # string standard data
-            representation=str({"label":self.label,"pattern":self.pattern,"width":self.width,"height":self.height})+linesep
+            standardData=self.__dict__.copy()
+            del standardData[IMAGE_MARKUP]
+            representation=str(standardData)+linesep
             # string image
             rawIndex=0
             columnIndex=0
@@ -128,7 +137,7 @@ class MinstDataSetExtractor():
         # get file size
         fileSize=stat(self.labelsFileName).st_size
         # read file
-        with open(self.labelsFileName, FILE_MODE) as labelsFile:
+        with open(self.labelsFileName, FileMode.BINARY.value) as labelsFile:
             # read header
             for index in range(0,HeaderSize.LABEL.value):
                 binaryValue = labelsFile.read(DataTypeSize.INTEGER_SIZE.value)
@@ -179,7 +188,7 @@ class MinstDataSetExtractor():
         # get file size
         fileSize=stat(self.imagesFileName).st_size
         # read file
-        with open(self.imagesFileName, FILE_MODE) as imagesFile:
+        with open(self.imagesFileName, FileMode.BINARY.value) as imagesFile:
             # read header
             for index in range(0,HeaderSize.IMAGE.value):
                 binaryValue = imagesFile.read(DataTypeSize.INTEGER_SIZE.value)
@@ -248,8 +257,8 @@ class MinstDataSetExtractor():
             objectTestData=TestData(self.width, self.height, images[index], labels[index],self.patternValue)
             dictTestData=dumps(objectTestData.__dict__)
             # write it into file
-            testFileName=join(self.outputDirectoryName,str(index)+".json")
-            testFile = open(testFileName, "w")
+            testFileName=join(self.outputDirectoryName,str(index)+TEST_FILE_EXTENSION)
+            testFile = open(testFileName, FileMode.TEST_WRITE.value)
             testFile.write(dictTestData)
             testFile.close()
         # logger output
@@ -291,10 +300,10 @@ if __name__ == '__main__':
     mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,outputDirectoryName,patternValue)
     mdse.extractDataSet()
     # CHECK EXTRACTED DATA
-    #testData=TestData()
-    #for i in range(0,10):
-    #    testData.load("/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/TEST/"+str(i)+".json")
-    #    print(str(testData))
+    testData=TestData()
+    for i in range(0,10):
+        testData.load("/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/TEST/"+str(i)+TEST_FILE_EXTENSION)
+        print(str(testData))
     #    pass
     pass
 pass

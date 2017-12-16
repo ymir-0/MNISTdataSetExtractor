@@ -68,7 +68,9 @@ class MinstDataSetExtractor():
         self.width, self.height, images = self.extractImages()
         # check size consistancy labels / images
         if len(labels)!=len(images):
-            raise Exception('Size between labels & images does not match : labels=' + str(len(labels)) + " images=" + str(len(images)))
+            errorMessage="Size between labels & images does not match : labels=" + str(len(labels)) + " images=" + str(len(images))
+            logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractDataSet.__name__, errorMessage)
+            raise Exception(errorMessage)
         # write data
         self.writeData(images ,labels)
         # logger output
@@ -113,11 +115,15 @@ class MinstDataSetExtractor():
         logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkLabelsFile.__name__,message=argsStr)
         # check magic number
         if MagicNumber.LABEL.value != magicNumber:
-            raise Exception('Labels magic number does not match : expected=' + str(MagicNumber.LABEL.value) + " actual="+str(magicNumber))
+            errorMessage="Labels magic number does not match : expected=" + str(MagicNumber.LABEL.value) + " actual="+str(magicNumber)
+            logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkLabelsFile.__name__, errorMessage)
+            raise Exception(errorMessage)
         # check size
         expectedSize=labelsNumber+(HeaderSize.LABEL.value*DataTypeSize.INTEGER_SIZE.value)
         if expectedSize != fileSize:
-            raise Exception('Labels file size does not match : expected=' + str(expectedSize) + " actual="+str(fileSize))
+            errorMessage="Labels file size does not match : expected=" + str(expectedSize) + " actual="+str(fileSize)
+            logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkLabelsFile.__name__, errorMessage)
+            raise Exception(errorMessage)
         # logger output
         logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkLabelsFile.__name__)
     # extract images
@@ -175,11 +181,15 @@ class MinstDataSetExtractor():
         logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkImagesFile.__name__,message=argsStr)
         # check magic number
         if MagicNumber.IMAGE.value != magicNumber:
-            raise Exception('Images magic number does not match : expected=' + str(MagicNumber.IMAGE.value) + " actual="+str(magicNumber))
+            errorMessage="Images magic number does not match : expected=" + str(MagicNumber.IMAGE.value) + " actual="+str(magicNumber)
+            logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkImagesFile.__name__, errorMessage)
+            raise Exception(errorMessage)
         # check size
         expectedSize=(imagesNumber*pixelNumbers)+(HeaderSize.IMAGE.value*DataTypeSize.INTEGER_SIZE.value)
         if expectedSize != fileSize:
-            raise Exception('Images file size does not match : expected=' + str(expectedSize) + " actual="+str(fileSize))
+            errorMessage="Images file size does not match : expected=" + str(expectedSize) + " actual="+str(fileSize)
+            logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkImagesFile.__name__, errorMessage)
+            raise Exception(errorMessage)
         # logger output
         logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.checkImagesFile.__name__)
     # write data
@@ -202,7 +212,9 @@ class MinstDataSetExtractor():
         # check patternValue
         patternValues=Pattern.listValues()
         if patternValue.upper() not in patternValues:
-            raise Exception('Pattern does not match : expected=' + str(patternValues) + " actual=" + str(patternValue))
+            errorMessage="Pattern does not match : expected=" + str(patternValues) + " actual=" + str(patternValue)
+            logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.__init__.__name__, errorMessage)
+            raise Exception(errorMessage)
         # construct object
         self.labelsFileName=labelsFileName
         self.imagesFileName=imagesFileName

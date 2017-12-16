@@ -119,8 +119,18 @@ class MinstDataSetExtractor():
         # parse labels file
         with open(self.labelsFileName, FileMode.BINARY.value) as labelsFile:
             # parse labels file header
-            self.parseLabelsFileHeader(labelsFile)
-            pass
+            labelsNumber=self.parseLabelsFileHeader(labelsFile)
+            # parse images file
+            with open(self.imagesFileName, FileMode.BINARY.value) as imagesFile:
+                # parse image file header
+                imagesNumber, width, height=self.parseImagesFileHeader(imagesFile)
+                # check size consistancy labels / images
+                if labelsNumber != imagesNumber:
+                    errorMessage = "Size between labels & images does not match : labels=" + str(labelsNumber) + " images=" + str(imagesNumber)
+                    logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__,MinstDataSetExtractor.extractDataSet.__name__, errorMessage)
+                    raise Exception(errorMessage)
+                pass
+            imagesFile.close()
         labelsFile.close()
         # logger output
         logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractDataSet.__name__)
@@ -143,12 +153,57 @@ class MinstDataSetExtractor():
                     errorMessage = "Labels magic number does not match : expected=" + str(MagicNumber.LABEL.value) + " actual=" + str(magicNumber)
                     logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__,MinstDataSetExtractor.parseLabelsFileHeader.__name__, errorMessage)
                     raise Exception(errorMessage)
+            # read labels number and check size
             else:
                 labelsNumber = numericValue
+                expectedSize = labelsNumber + (HeaderSize.LABEL.value * DataTypeSize.INTEGER_SIZE.value)
+                if expectedSize != fileSize:
+                    errorMessage = "Labels file size does not match : expected=" + str(expectedSize) + " actual=" + str(fileSize)
+                    logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__,MinstDataSetExtractor.parseLabelsFileHeader.__name__, errorMessage)
+                    raise Exception(errorMessage)
         # logger output
         logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.parseLabelsFileHeader.__name__,labelsNumber)
         # return
         return labelsNumber
+    def parseImagesFileHeader(self,imagesFile):
+        # logger context
+        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.parseImagesFileHeader).parameters,locals())
+        # logger input
+        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.parseImagesFileHeader.__name__,message=argsStr)
+        # get file size
+        fileSize=stat(self.imagesFileName).st_size
+        # read header
+        for index in range(0, HeaderSize.IMAGE.value):
+            binaryValue = imagesFile.read(DataTypeSize.INTEGER_SIZE.value)
+            numericValue = int.from_bytes(binaryValue, byteorder=ENDIAN)
+            # control magik number
+            if index == 0:
+                magicNumber = numericValue
+                # check magic number
+                if MagicNumber.IMAGE.value != magicNumber:
+                    errorMessage = "Images magic number does not match : expected=" + str(MagicNumber.IMAGE.value) + " actual=" + str(magicNumber)
+                    logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__,MinstDataSetExtractor.parseImagesFileHeader.__name__, errorMessage)
+                    raise Exception(errorMessage)
+            # read images number
+            elif index == 1:
+                imagesNumber = numericValue
+            # read images width
+            elif index == 2:
+                width = numericValue
+            # read images height and check file size
+            else:
+                height = numericValue
+                pixelNumbers = width * height
+                expectedSize = (imagesNumber * pixelNumbers) + (HeaderSize.IMAGE.value * DataTypeSize.INTEGER_SIZE.value)
+                if expectedSize != fileSize:
+                    errorMessage = "Images file size does not match : expected=" + str(expectedSize) + " actual=" + str(fileSize)
+                    logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__,MinstDataSetExtractor.parseImagesFileHeader.__name__, errorMessage)
+                    raise Exception(errorMessage)
+                pass
+        # logger output
+        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.parseImagesFileHeader.__name__,(imagesNumber, width , height))
+        # return
+        return imagesNumber, width , height
     # constructor
     def __init__(self, labelsFileName, imagesFileName, outputDirectoryName,patternValue):
         # logger context

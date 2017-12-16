@@ -2,15 +2,15 @@
 # imports
 from inspect import signature
 from enum import Enum, unique
-from os import stat,makedirs,linesep
-from os.path import join, exists, isdir, dirname,realpath
+from os import stat,makedirs,linesep, sep
+from os.path import join, exists, isdir, realpath
 from json import dumps, loads
 from argparse import ArgumentParser
 from pythoncommontools.logger import logger
 from pythoncommontools.objectUtil.objectUtil import methodArgsStringRepresentation
 from pythoncommontools.configurationLoader import configurationLoader
 # contantes
-CURRENT_DIRECTORY = realpath(__file__).rsplit('/', 1)[0]
+CURRENT_DIRECTORY = realpath(__file__).rsplit(sep, 1)[0]
 CONFIGURATION_FILE=join(CURRENT_DIRECTORY,"..","conf","minsdatasetextractor.conf")
 ENDIAN="big"
 IMAGE_MARKUP="image"
@@ -60,6 +60,16 @@ class Pattern(Enum):
     def listValues():
         values=list()
         for pattern in Pattern: values.append(pattern.value.upper())
+        return values
+# action
+@unique
+class Action(Enum):
+    EXTRACT="EXTRACT"
+    DISPLAY="DISPLAY"
+    @staticmethod
+    def listValues():
+        values=list()
+        for action in Action: values.append(action.value.upper())
         return values
 # test datum
 class TestData():
@@ -278,26 +288,32 @@ class MinstDataSetExtractor():
         logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.__init__.__name__)
 # run extractor
 if __name__ == '__main__':
-    # parse arguments
+    # parse arguments parser
     parser = ArgumentParser()
-    parser.add_argument("action", help="action to perform : [extract|display]")
+    parser.add_argument("-a","--action", help="action to perform", choices=Action.listValues())
     parser.add_argument("-l","--label", help="with extract, label file")
     parser.add_argument("-i","--image", help="with extract, image file")
     parser.add_argument("-o","--output", help="with extract, output directory")
     parser.add_argument("-p","--pattern", help="with extract, pattern", choices=Pattern.listValues())
     parser.add_argument("-f","--files", help="with display, list of files", nargs='+')
+    # parse arguments
     arguments = parser.parse_args()
-    # EXTRACT DATA SET
-    #labelsFileName="/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-labels.idx1-ubyte"
-    #imagesFileName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-images.idx3-ubyte"
-    #patternValue=Pattern.TEST.value
-    #outputDirectoryName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/"+patternValue
-    #mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,outputDirectoryName,patternValue)
-    #mdse.extractDataSet()
-    # CHECK EXTRACTED DATA
-    #testData=TestData()
-    #for i in range(0,10):
-    #    testData.load("/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/TEST/"+str(i)+TEST_FILE_EXTENSION)
-    #    print(str(testData))
+    # extract
+    if arguments.action==Action.EXTRACT.value:
+        labelsFileName=arguments.label
+        imagesFileName=arguments.image
+        outputDirectoryName=arguments.output
+        patternValue=arguments.pattern
+        mdse = MinstDataSetExtractor(labelsFileName, imagesFileName, outputDirectoryName, patternValue)
+        mdse.extractDataSet()
+    # display
+    elif arguments.action==Action.DISPLAY.value:
+        testData = TestData()
+        for file in arguments.files:
+            testData.load(file)
+            print(str(testData))
+    # unknown parameter
+    else :
+        pass
     pass
 pass

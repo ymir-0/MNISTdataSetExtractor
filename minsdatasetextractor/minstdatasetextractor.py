@@ -12,13 +12,10 @@ from pythoncommontools.objectUtil.objectUtil import methodArgsStringRepresentati
 from pythoncommontools.configurationLoader import configurationLoader
 # contants
 CURRENT_DIRECTORY = realpath(__file__).rsplit(sep, 1)[0]
-CONFIGURATION_FILE=join(CURRENT_DIRECTORY,"..","conf","minsdatasetextractor.conf")
-README_FILE=join(CURRENT_DIRECTORY,"..","README.txt")
+CONFIGURATION_FILE=join(CURRENT_DIRECTORY,"conf","minsdatasetextractor.conf")
+README_FILE=join(CURRENT_DIRECTORY,"README.txt")
 ENDIAN="big"
 TEST_FILE_EXTENSION=".json"
-# load configuration
-configurationLoader.loadConfiguration( CONFIGURATION_FILE )
-logger.loadLogger("MinstDataSetExtractor",CONFIGURATION_FILE)
 # file mode
 @unique
 class FileMode(Enum):
@@ -230,6 +227,9 @@ if __name__ == '__main__':
     readme=testFile.read()
     testFile.close()
     print(readme)
+    # load configuration
+    configurationLoader.loadConfiguration(CONFIGURATION_FILE)
+    logger.loadLogger("MinstDataSetExtractor", CONFIGURATION_FILE)
     # parse arguments parser
     parser = ArgumentParser()
     parser.add_argument("action", help="action to perform", choices=Action.listValues())

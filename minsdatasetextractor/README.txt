@@ -7,3 +7,5 @@ For more general information : https://www.nist.gov/itl/iad/image-group/emnist-d
  - to extract raw data into JSON, first uncompress the archive
    then, run this command : minstdatasetextractor.py EXTRACT -l <LABELS_FILE> -i <IMAGES_FILE> -o <OUTPUT_FOLDER> -p <PATTERN>
  - to display extracted JSON data, run this command : minstdatasetextractor.py DISPLAY -f <DISPLAY_FILES#0> <DISPLAY_FILES#1> ... <DISPLAY_FILES#N>
+* WARNING
+Think to adapt configuration file regarding your needs : conf/minsdatasetextractor.conf

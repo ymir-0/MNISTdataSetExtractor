@@ -13,7 +13,7 @@ def import_submodules(package):
         package = import_module(package)
     modules = list()
     for loader, name, is_pkg in walk_packages(package.__path__):
-        full_name = package.__name__ + '.' + name
+        full_name = package.__name__ + "." + name
         full_path=join(loader.path,name)
         # continue recursion only if module is folder
         if is_pkg and isdir(full_path):
@@ -25,10 +25,23 @@ import minsdatasetextractor
 rootPackage=minsdatasetextractor
 module_path = join(dirname(__file__), rootPackage.__name__ , "version.py")
 version_line = [line for line in open(module_path) if line.startswith("__version__")][0]
-__version__ = version_line.split('__version__ = ')[-1][1:][:-2]
+__version__ = version_line.split("__version__ = ")[-1][1:][:-2]
 modules=[rootPackage.__name__]+import_submodules (rootPackage)
 print("loaded modules : " + str(modules))
 # define setup parameters
+''' WARNING : to have extra files installed in fine relative directory, please :
+ - To make "package_data" parameter find files, put them inside a python package planned for deployment.
+   For example :
+   minsdatasetextractor
+   ├── conf
+   │   └── minsdatasetextractor.conf
+   ├── __init__.py
+   ├── minstdatasetextractor.py
+   ├── README.txt
+   └── version.py
+ - Then use parameter "package_data" instead of "data_files":
+   "data_files" will put files in "/usr/local/conf" directory, when "package_data" will respect your paths
+'''
 setup(
     name="MNISTdataSetExtractor",
     version=__version__,
@@ -36,7 +49,8 @@ setup(
     packages=modules,
     dependency_links=[YGGDRASIL_REP+"pythoncommontools",YGGDRASIL_REP+"neuralnetworkcommon"],
     install_requires=["pythoncommontools","neuralnetworkcommon"],
+    package_data={"": ["conf/minsdatasetextractor.conf","README.txt"]},
     classifiers=[
-        'Programming Language :: Python :: 3',
+        "Programming Language :: Python :: 3",
     ],
 )

@@ -10,6 +10,7 @@ from neuralnetworkcommon.testdata import TestData
 from pythoncommontools.logger import logger
 from pythoncommontools.objectUtil.objectUtil import methodArgsStringRepresentation
 from pythoncommontools.configurationLoader import configurationLoader
+from pythoncommontools.jsonEncoderDecoder.complexJsonEncoderDecoder import ComplexJsonEncoder
 # contants
 CURRENT_DIRECTORY = realpath(__file__).rsplit(sep, 1)[0]
 CONFIGURATION_FILE=join(CURRENT_DIRECTORY,"conf","minsdatasetextractor.conf")
@@ -188,7 +189,7 @@ class MinstDataSetExtractor():
                 pixelIndex = pixelIndex + 1
             # set & encode test data
             objectTestData=TestData(width, height,image,label,self.patternValue)
-            dictTestData=dumps(objectTestData.__dict__)
+            dictTestData=ComplexJsonEncoder.dumpComplexObject(objectTestData)
             # write test data into file
             testFileName=join(self.outputDirectoryName,str(index)+TEST_FILE_EXTENSION)
             testFile = open(testFileName, FileMode.TEST_WRITE.value)
@@ -251,7 +252,6 @@ if __name__ == '__main__':
         mdse.extractDataSet()
     # display
     elif arguments.action==Action.DISPLAY.value:
-        testData = TestData()
         for file in arguments.files:
-            testData.load(file)
+            testData=TestData.load(file)
             print(str(testData))

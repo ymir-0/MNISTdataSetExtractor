@@ -1,12 +1,27 @@
 #!/usr/bin/env python3
 # imports
+from inspect import signature
 from enum import Enum, unique
-from os import stat
+from os import stat,makedirs,sep
+from os.path import join, exists, isdir, realpath
+from json import dumps
+from argparse import ArgumentParser
+from neuralnetworkcommon.testdata import TestData
 from pythoncommontools.logger import logger
-# contantes
-CONFIGURATION_FILE="../conf/"
-FILE_MODE="rb"
+from pythoncommontools.objectUtil.objectUtil import methodArgsStringRepresentation
+from pythoncommontools.configurationLoader import configurationLoader
+# contants
+CURRENT_DIRECTORY = realpath(__file__).rsplit(sep, 1)[0]
+CONFIGURATION_FILE=join(CURRENT_DIRECTORY,"conf","minsdatasetextractor.conf")
+README_FILE=join(CURRENT_DIRECTORY,"README.txt")
 ENDIAN="big"
+TEST_FILE_EXTENSION=".json"
+# file mode
+@unique
+class FileMode(Enum):
+    BINARY="rb"
+    TEST_WRITE="wt"
+    README="rt"
 # data type size
 @unique
 class DataTypeSize(Enum):
@@ -17,6 +32,16 @@ class DataTypeSize(Enum):
 class HeaderSize(Enum):
     LABEL=2
     IMAGE=4
+@unique
+class HeaderLabelOffset(Enum):
+    MAGIK_NUMBER=0
+    LABELS_NUMBER=1
+@unique
+class HeaderImageOffset(Enum):
+    MAGIK_NUMBER=0
+    IMAGES_NUMBER=1
+    WIDTH=2
+    HEIGHT=3
 # header size
 @unique
 class MagicNumber(Enum):
@@ -32,135 +57,201 @@ class Pattern(Enum):
         values=list()
         for pattern in Pattern: values.append(pattern.value.upper())
         return values
-# test datum
-class TestData():
-    # constructor
-    def __init__(self, width, height, images, labels,pattern):
-        self.width = width
-        self.height = height
-        self.images = images
-        self.labels = labels
-        self.pattern = pattern
+# action
+@unique
+class Action(Enum):
+    EXTRACT="EXTRACT"
+    DISPLAY="DISPLAY"
+    @staticmethod
+    def listValues():
+        values=list()
+        for action in Action: values.append(action.value.upper())
+        return values
 # MINST data set extractor
 class MinstDataSetExtractor():
     # extract data set
     def extractDataSet(self):
-        # extract separated data
-        labels=self.extractLabels()
-        self.width, self.height, images = self.extractImages()
-        # check size consistancy labels / images
-        if len(labels)!=len(images):
-            raise Exception('Size between labels & images does not match : labels=' + str(len(labels)) + " images=" + str(len(images)))
-        # write data
-        self.writeData(images ,labels)
-        pass
-    # extract labels
-    def extractLabels(self):
+        # logger context
+        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.extractDataSet).parameters,locals())
+        # logger input
+        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractDataSet.__name__,message=argsStr)
+        # parse labels file
+        with open(self.labelsFileName, FileMode.BINARY.value) as labelsFile:
+            # parse labels file header
+            labelsNumber=self.parseLabelsFileHeader(labelsFile)
+            # parse images file
+            with open(self.imagesFileName, FileMode.BINARY.value) as imagesFile:
+                # parse image file header
+                imagesNumber, width, height=self.parseImagesFileHeader(imagesFile)
+                # check size consistancy labels / images
+                if labelsNumber != imagesNumber:
+                    errorMessage = "Size between labels & images does not match : labels=" + str(labelsNumber) + " images=" + str(imagesNumber)
+                    logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__,MinstDataSetExtractor.extractDataSet.__name__, errorMessage)
+                    raise Exception(errorMessage)
+                # write test data
+                self.writeData(labelsNumber, labelsFile, imagesFile, width, height)
+            imagesFile.close()
+        labelsFile.close()
+        # logger output
+        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.extractDataSet.__name__)
+    # parse labels file header
+    def parseLabelsFileHeader(self,labelsFile):
+        # logger context
+        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.parseLabelsFileHeader).parameters,locals())
+        # logger input
+        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.parseLabelsFileHeader.__name__,message=argsStr)
         # get file size
         fileSize=stat(self.labelsFileName).st_size
-        # read file
-        with open(self.labelsFileName, FILE_MODE) as labelsFile:
-            # read header
-            for index in range(0,HeaderSize.LABEL.value):
-                binaryValue = labelsFile.read(DataTypeSize.INTEGER_SIZE.value)
-                numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
-                if index==0 :
-                    magicNumber=numericValue
-                else:
-                    labelsNumber = numericValue
-                    self.checkLabelsFile(fileSize, magicNumber, labelsNumber)
-            # read body
-            labels=dict()
-            index=0
-            while index<labelsNumber:
-                binaryValue = labelsFile.read(DataTypeSize.BYTE_SIZE.value)
-                numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
-                labels[index]=str(numericValue)
-                index=index+1
-            labelsFile.close()
-        return labels
-    # check labels file
-    def checkLabelsFile(self,fileSize,magicNumber,labelsNumber):
-        # check magic number
-        if MagicNumber.LABEL.value != magicNumber:
-            raise Exception('Labels magic number does not match : expected=' + str(MagicNumber.LABEL.value) + " actual="+str(magicNumber))
-        # check size
-        expectedSize=labelsNumber+(HeaderSize.LABEL.value*DataTypeSize.INTEGER_SIZE.value)
-        if expectedSize != fileSize:
-            raise Exception('Labels file size does not match : expected=' + str(expectedSize) + " actual="+str(fileSize))
-    # extract images
-    def extractImages(self):
+        # parse labels file header
+        for index in range(0, HeaderSize.LABEL.value):
+            binaryValue = labelsFile.read(DataTypeSize.INTEGER_SIZE.value)
+            numericValue = int.from_bytes(binaryValue, byteorder=ENDIAN)
+            # control magik number
+            if index == HeaderLabelOffset.MAGIK_NUMBER.value:
+                magicNumber = numericValue
+                if MagicNumber.LABEL.value != magicNumber:
+                    errorMessage = "Labels magic number does not match : expected=" + str(MagicNumber.LABEL.value) + " actual=" + str(magicNumber)
+                    logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__,MinstDataSetExtractor.parseLabelsFileHeader.__name__, errorMessage)
+                    raise Exception(errorMessage)
+            # read labels number and check size
+            else:
+                labelsNumber = numericValue
+                expectedSize = labelsNumber + (HeaderSize.LABEL.value * DataTypeSize.INTEGER_SIZE.value)
+                if expectedSize != fileSize:
+                    errorMessage = "Labels file size does not match : expected=" + str(expectedSize) + " actual=" + str(fileSize)
+                    logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__,MinstDataSetExtractor.parseLabelsFileHeader.__name__, errorMessage)
+                    raise Exception(errorMessage)
+        # logger output
+        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.parseLabelsFileHeader.__name__,labelsNumber)
+        # return
+        return labelsNumber
+    # parse images file header
+    def parseImagesFileHeader(self,imagesFile):
+        # logger context
+        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.parseImagesFileHeader).parameters,locals())
+        # logger input
+        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.parseImagesFileHeader.__name__,message=argsStr)
         # get file size
         fileSize=stat(self.imagesFileName).st_size
-        # read file
-        with open(self.imagesFileName, FILE_MODE) as imagesFile:
-            # read header
-            for index in range(0,HeaderSize.IMAGE.value):
-                binaryValue = imagesFile.read(DataTypeSize.INTEGER_SIZE.value)
-                numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
-                if index==0 :
-                    magicNumber=numericValue
-                elif index == 1:
-                    imagesNumber = numericValue
-                elif index == 2:
-                    width = numericValue
-                else:
-                    height = numericValue
-                    pixelNumbers = width * height
-                    self.checkImagesFile(fileSize, magicNumber, imagesNumber,pixelNumbers)
-            # read body
-            images=dict()
-            pixels=list()
-            imageIndex=0
-            pixelIndex=0
-            while imageIndex<imagesNumber:
-                # read image
-                if pixelIndex<pixelNumbers:
-                    binaryValue = imagesFile.read(DataTypeSize.BYTE_SIZE.value)
-                    numericValue=int.from_bytes(binaryValue, byteorder=ENDIAN)
-                    pixels.append(numericValue)
-                    pixelIndex=pixelIndex+1
-                # add image to dictionary
-                else:
-                    images[imageIndex]=pixels
-                    imageIndex=imageIndex+1
-                    pixels = list()
-                    pixelIndex = 0
-            imagesFile.close()
-        return width , height, images
-    # check images file
-    def checkImagesFile(self,fileSize,magicNumber,imagesNumber,pixelNumbers):
-        # check magic number
-        if MagicNumber.IMAGE.value != magicNumber:
-            raise Exception('Images magic number does not match : expected=' + str(MagicNumber.IMAGE.value) + " actual="+str(magicNumber))
-        # check size
-        expectedSize=(imagesNumber*pixelNumbers)+(HeaderSize.IMAGE.value*DataTypeSize.INTEGER_SIZE.value)
-        if expectedSize != fileSize:
-            raise Exception('Images file size does not match : expected=' + str(expectedSize) + " actual="+str(fileSize))
+        # read header
+        for index in range(0, HeaderSize.IMAGE.value):
+            binaryValue = imagesFile.read(DataTypeSize.INTEGER_SIZE.value)
+            numericValue = int.from_bytes(binaryValue, byteorder=ENDIAN)
+            # control magik number
+            if index == HeaderImageOffset.MAGIK_NUMBER.value:
+                magicNumber = numericValue
+                # check magic number
+                if MagicNumber.IMAGE.value != magicNumber:
+                    errorMessage = "Images magic number does not match : expected=" + str(MagicNumber.IMAGE.value) + " actual=" + str(magicNumber)
+                    logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__,MinstDataSetExtractor.parseImagesFileHeader.__name__, errorMessage)
+                    raise Exception(errorMessage)
+            # read images number
+            elif index == HeaderImageOffset.IMAGES_NUMBER.value:
+                imagesNumber = numericValue
+            # read images width
+            elif index == HeaderImageOffset.WIDTH.value:
+                width = numericValue
+            # read images height and check file size
+            else:
+                height = numericValue
+                pixelNumbers = width * height
+                expectedSize = (imagesNumber * pixelNumbers) + (HeaderSize.IMAGE.value * DataTypeSize.INTEGER_SIZE.value)
+                if expectedSize != fileSize:
+                    errorMessage = "Images file size does not match : expected=" + str(expectedSize) + " actual=" + str(fileSize)
+                    logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__,MinstDataSetExtractor.parseImagesFileHeader.__name__, errorMessage)
+                    raise Exception(errorMessage)
+        # logger output
+        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.parseImagesFileHeader.__name__,(imagesNumber, width , height))
+        # return
+        return imagesNumber, width , height
     # write data
-    def writeData(self, images, labels):
-        for index in range(0, len(images)):
-            testData=TestData(self.width, self.height, images[index], labels[index],self.patternValue)
-            pass
-        pass
+    def writeData(self, dataNumber, labelsFile, imagesFile, width, height):
+        # logger context
+        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.writeData).parameters,locals())
+        # logger input
+        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.writeData.__name__,message=argsStr)
+        # read all data
+        pixelNumbers=width*height
+        index = 0
+        while index < dataNumber:
+            # read label
+            binaryValue = labelsFile.read(DataTypeSize.BYTE_SIZE.value)
+            numericValue = int.from_bytes(binaryValue, byteorder=ENDIAN)
+            label = str(numericValue)
+            # read image
+            pixelIndex = 0
+            image = list()
+            while pixelIndex < pixelNumbers:
+                binaryValue = imagesFile.read(DataTypeSize.BYTE_SIZE.value)
+                numericValue = int.from_bytes(binaryValue, byteorder=ENDIAN)
+                image.append(numericValue)
+                pixelIndex = pixelIndex + 1
+            # set & encode test data
+            objectTestData=TestData(width, height,image,label,self.patternValue)
+            dictTestData=dumps(objectTestData.__dict__)
+            # write test data into file
+            testFileName=join(self.outputDirectoryName,str(index)+TEST_FILE_EXTENSION)
+            testFile = open(testFileName, FileMode.TEST_WRITE.value)
+            testFile.write(dictTestData)
+            testFile.close()
+            # next data
+            index = index + 1
+        # logger output
+        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.writeData.__name__)
     # constructor
     def __init__(self, labelsFileName, imagesFileName, outputDirectoryName,patternValue):
-        # check patternValue
-        patternValues=Pattern.listValues()
-        if patternValue.upper() not in patternValues:
-            raise Exception('Pattern does not match : expected=' + str(patternValues) + " actual=" + str(patternValue))
+        # logger context
+        argsStr = methodArgsStringRepresentation(signature(MinstDataSetExtractor.__init__).parameters,locals())
+        # logger input
+        logger.loadedLogger.input(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.__init__.__name__,message=argsStr)
+        # INFO: pattern parameter has already been checked by the system
+        # create output folder is needed
+        if exists(outputDirectoryName):
+            if not isdir(outputDirectoryName):
+                errorMessage = "There is already something at output folder : " +outputDirectoryName
+                logger.loadedLogger.error(__name__, MinstDataSetExtractor.__name__,MinstDataSetExtractor.__init__.__name__, errorMessage)
+                raise Exception(errorMessage)
+        else:
+            makedirs(outputDirectoryName)
         # construct object
         self.labelsFileName=labelsFileName
         self.imagesFileName=imagesFileName
         self.patternValue=patternValue
         self.outputDirectoryName=outputDirectoryName
+        # logger output
+        logger.loadedLogger.output(__name__, MinstDataSetExtractor.__name__, MinstDataSetExtractor.__init__.__name__)
 # run extractor
 if __name__ == '__main__':
-    labelsFileName="/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-labels.idx1-ubyte"
-    imagesFileName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/UnarchivedDataSet/t10k-images.idx3-ubyte"
-    patternValue=Pattern.TEST.value
-    outputDirectoryName = "/mnt/hgfs/shared/Documents/myDevelopment/MNISTdataSetExtractor/ExtractedDataSet/"+patternValue
-    mdse=MinstDataSetExtractor(labelsFileName, imagesFileName,outputDirectoryName,patternValue)
-    mdse.extractDataSet()
-    pass
-pass
+    # display readme
+    testFile = open(README_FILE, FileMode.README.value)
+    readme=testFile.read()
+    testFile.close()
+    print(readme)
+    # load configuration
+    configurationLoader.loadConfiguration(CONFIGURATION_FILE)
+    logger.loadLogger("MinstDataSetExtractor", CONFIGURATION_FILE)
+    # parse arguments parser
+    parser = ArgumentParser()
+    parser.add_argument("action", help="action to perform", choices=Action.listValues())
+    parser.add_argument("-l","--label", help="with extract, label file")
+    parser.add_argument("-i","--image", help="with extract, image file")
+    parser.add_argument("-o","--output", help="with extract, output directory")
+    parser.add_argument("-p","--pattern", help="with extract, pattern", choices=Pattern.listValues())
+    parser.add_argument("-f","--files", help="with display, list of files", nargs='+')
+    # parse arguments
+    arguments = parser.parse_args()
+    # INFO: those parameters will be checked by the system : action & pattern
+    # extract
+    if arguments.action==Action.EXTRACT.value:
+        labelsFileName=arguments.label
+        imagesFileName=arguments.image
+        outputDirectoryName=arguments.output
+        patternValue=arguments.pattern
+        mdse = MinstDataSetExtractor(labelsFileName, imagesFileName, outputDirectoryName, patternValue)
+        mdse.extractDataSet()
+    # display
+    elif arguments.action==Action.DISPLAY.value:
+        testData = TestData()
+        for file in arguments.files:
+            testData.load(file)
+            print(str(testData))
